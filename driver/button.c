@@ -1,0 +1,325 @@
+#include <stdint.h>
+#include <stm32f10x.h>
+#include "button.h"
+#include "debug.h"
+
+#define DEBOUNCE_MS        20
+#define LONG_PRESS_MS     800
+#define MULTICLICK_MS     400   // max pauza medzi klikmi
+
+#define BUTTON_DEF(port, pin, single_cb, double_cb, triple_cb, long_cb) \
+    { port, (1 << pin), pin, 0, 0, 0, 0, 0, 0, single_cb, double_cb, triple_cb, long_cb }
+
+typedef void (*btnCb_t)(void);
+typedef enum {
+    BTN_IDLE = 0u,
+    BTN_DEBOUNCE_PRESS,
+    BTN_PRESSED,
+    BTN_DEBOUNCE_RELEASE
+} btnState_t;
+
+typedef struct {
+    /* HW */
+    GPIO_TypeDef *port;
+    uint16_t      pin_mask;
+    uint8_t       exti_line;   // 0..15
+
+    /* SW */
+    btnState_t    state;
+    uint32_t      timer;
+    uint32_t      press_time;
+    uint8_t       click_count;
+    uint8_t       long_sent;
+    uint8_t       active;      // 0 = EXTI mode, 1 = polling
+
+    /* callbacks */
+    btnCb_t       on_single;
+    btnCb_t       on_double;
+    btnCb_t       on_triple;
+    btnCb_t       on_long;
+} btn_t;
+
+volatile uint32_t sys_ms;
+
+static void btn0_single(void);
+static void btn0_double(void);
+static void btn0_triple(void);
+static void btn0_long(void);
+static const btn_t buttonInit[] = {
+    BUTTON_DEF(GPIOB, 12u, btn0_single, btn0_double, btn0_triple, btn0_long  ),  // Tlacidlo 0 – PB12
+    BUTTON_DEF(GPIOC, 15u, btn0_long  , btn0_triple, btn0_double, btn0_single),  // Tlacidlo 1 – PC15
+    BUTTON_DEF(GPIOA,  1u,     0u     , btn0_double, btn0_triple,     0u     )   // Tlacidlo 2 – PA1
+};
+#define BUTTON_COUNT ((uint32_t)(sizeof(buttonInit) / sizeof(buttonInit[0])))
+static volatile btn_t buttons[BUTTON_COUNT];
+
+static void initLedPin(void);
+static void initExti(void);
+static void initGlobalVars(void);
+
+static void ledPinToggle(void);
+static void irqGlobalHandler(void);
+
+static void btn0_single(void) {
+    DEBUG_sendChar('S', 0);
+    ledPinToggle();
+    // GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR13) ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
+}
+static void btn0_double(void) {
+    DEBUG_sendChar('D', 0);
+    // ledPinToggle();
+    GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR14) ? GPIO_BSRR_BR14 : GPIO_BSRR_BS14;
+}
+static void btn0_triple(void) {
+    DEBUG_sendChar('T', 0);
+    // ledPinToggle();
+    GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR15) ? GPIO_BSRR_BR15 : GPIO_BSRR_BS15;
+}
+static void btn0_long(void) {
+    DEBUG_sendChar('L', 0);
+    // ledPinToggle();
+    GPIOA->BSRR = (GPIOA->ODR & GPIO_ODR_ODR8) ? GPIO_BSRR_BR8 : GPIO_BSRR_BS8;
+}
+
+static inline uint8_t buttonRaw(const volatile btn_t *b)
+{
+    return (b->port->IDR & b->pin_mask) ? 1 : 0;
+}
+
+static void buttonProcess(volatile btn_t *b)
+{
+    uint8_t raw = buttonRaw(b);
+
+    switch (b->state) {
+        case BTN_IDLE:
+            if (raw == 0) {
+                b->state = BTN_DEBOUNCE_PRESS;
+                b->timer = DEBOUNCE_MS;
+            }
+            break;
+        case BTN_DEBOUNCE_PRESS:
+            if (raw == 0) {
+                if (--b->timer == 0) {
+                    b->state = BTN_PRESSED;
+                    b->press_time = 0;
+                    b->long_sent = 0;
+                }
+            } else {
+                b->state = BTN_IDLE;
+            }
+            break;
+        case BTN_PRESSED:
+            b->press_time++;
+
+            if (!b->long_sent && b->press_time >= LONG_PRESS_MS) {
+                b->long_sent = 1;
+                if (b->on_long)
+                    b->on_long();
+            }
+            if (raw == 1) {
+                b->state = BTN_DEBOUNCE_RELEASE;
+                b->timer = DEBOUNCE_MS;
+            }
+            break;
+        case BTN_DEBOUNCE_RELEASE:
+            if (raw == 1) {
+                if (--b->timer == 0) {
+                    b->state = BTN_IDLE;
+
+                    if (!b->long_sent) {
+                        b->click_count++;
+                        b->timer = MULTICLICK_MS;
+                    } else {
+                        // long press finished -> exit polling and re-enable EXTI immediately
+                        b->active = 0;
+                        EXTI->IMR |= (1u << b->exti_line);
+                    }
+                }
+            } else {
+                b->state = BTN_PRESSED;
+            }
+            break;
+    }
+}
+
+static void buttonMulticlickProcess(volatile btn_t *b)
+{
+    if (b->click_count > 0 && b->state == BTN_IDLE) {
+        if (b->timer > 0 && --b->timer == 0) {
+            switch (b->click_count) {
+                case 1: if (b->on_single) b->on_single(); break;
+                case 2: if (b->on_double) b->on_double(); break;
+                case 3: if (b->on_triple) b->on_triple(); break;
+            }
+            b->click_count = 0;
+
+            /* návrat do EXTI režimu */
+            b->active = 0;
+            EXTI->IMR |= (1 << b->exti_line);
+        }
+    }
+}
+
+static void initLedPin(void) {
+    uint32_t reg;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+    reg = GPIOC->CRH;
+    reg &= ~((uint32_t)GPIO_CRH_CNF13 | GPIO_CRH_MODE13);
+    reg |= GPIO_CRH_MODE13; // 11: Output mode, max speed 50 MHz
+    GPIOC->CRH = reg;
+
+    RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
+    reg = GPIOB->CRH;
+    reg &= ~((uint32_t)GPIO_CRH_CNF13 | GPIO_CRH_MODE13 | GPIO_CRH_CNF14 | GPIO_CRH_MODE14 | GPIO_CRH_CNF15 | GPIO_CRH_MODE15);
+    reg |= GPIO_CRH_MODE13 | GPIO_CRH_MODE14 | GPIO_CRH_MODE15; // 11: Output mode, max speed 50 MHz
+    GPIOB->CRH = reg;
+
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    reg = GPIOA->CRH;
+    reg &= ~((uint32_t)GPIO_CRH_CNF8 | GPIO_CRH_MODE8);
+    reg |= GPIO_CRH_MODE8; // 11: Output mode, max speed 50 MHz
+    GPIOA->CRH = reg;
+}
+
+static void initExti(void)
+{
+    // Povoliť AFIO
+    RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
+
+    for (uint32_t i = 0; i < BUTTON_COUNT; i++) {
+        volatile btn_t *b = (btn_t *)&buttons[i];
+
+        // Mapovanie EXTI
+        uint32_t line = b->exti_line;
+        uint32_t port_source = 0;
+
+        if (b->port == GPIOA) port_source = 0;
+        else if (b->port == GPIOB) port_source = 1;
+        else if (b->port == GPIOC) port_source = 2;
+        else if (b->port == GPIOD) port_source = 3;
+
+        // Clear previous mapping and set new one
+        uint32_t idx = line / 4;
+        uint32_t shift = (line % 4) * 4;
+        AFIO->EXTICR[idx] = (AFIO->EXTICR[idx] & ~(0xF << shift)) | (port_source << shift);
+
+        // Nastavenie EXTI
+        EXTI->IMR  |= (1 << line);  // unmask
+        EXTI->EMR  &= ~(1 << line); // len interrupt
+        EXTI->RTSR |= (1 << line);  // zmena na nábežnú hranu
+        EXTI->FTSR |= (1 << line);  // povoliť aj zostupnú hranu; obe hrany sú vždy aktívne, bez ohľadu na logiku tlačidla
+        EXTI->PR    = (1 << line);  // clear pending
+
+        // Povolenie NVIC pre EXTI 10-15 (ak máš viac tlačidiel)
+        if (b->exti_line <= 4u) {
+            NVIC_EnableIRQ(EXTI0_IRQn + b->exti_line);
+        } else if(b->exti_line <= 9u) {
+            NVIC_EnableIRQ(EXTI9_5_IRQn);
+        } else {
+            NVIC_EnableIRQ(EXTI15_10_IRQn);
+        }
+    }
+}
+
+static void initGlobalVars(void) {
+    sys_ms = 0u;
+    for (uint32_t i = 0; i < BUTTON_COUNT; i++) {
+        buttons[i] = buttonInit[i];
+    }
+}
+
+static void ledPinToggle(void) {
+    // bit banding pre PC13 ODR registra je adresa 0x422201B4 = 0x42000000 + (0x1100c*32)+(0xD*4)
+    // adresa bitu BS13 pre PORTC je: 0x42220234 = 0x42000000 + (0x11010*32)+(13*4)
+    // adresa bitu BR13 pre PORTC je: 0x42220274 = 0x42000000 + (0x11010*32)+(29*4)
+    GPIOC->BSRR = (GPIOC->ODR & GPIO_ODR_ODR13) ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
+}
+
+static void irqGlobalHandler(void) {
+    uint32_t pending = EXTI->PR & EXTI->IMR;
+
+    for (uint32_t i = 0; i < BUTTON_COUNT; i++) {
+        uint32_t mask = (1 << buttons[i].exti_line);
+        if (pending & mask) {
+            EXTI->PR = mask;                 // clear pending
+            EXTI->IMR &= ~mask;              // vypnúť EXTI
+            buttons[i].active = 1;           // prejsť do polling
+        }
+    }
+}
+
+void BUTTON_init(void)
+{
+    initGlobalVars();
+    initLedPin();
+    for (uint32_t i = 0; i < BUTTON_COUNT; i++) {
+        volatile btn_t *b = (btn_t *)&buttons[i];
+
+        // povoliť hodiny pre port
+        if (b->port == GPIOA) RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+        else if (b->port == GPIOB) RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
+        else if (b->port == GPIOC) RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+        else if (b->port == GPIOD) RCC->APB2ENR |= RCC_APB2ENR_IOPDEN;
+
+        // GPIO pin: vstup pull-up / pull-down
+        uint32_t pin = __builtin_ctz(b->pin_mask);
+        uint32_t value;
+        volatile uint32_t *port;
+
+        if (b->pin_mask < (1 << 8)) {
+            port = &b->port->CRL;
+        } else {
+            pin -= 8;
+            port = &b->port->CRH;
+        }
+        value = *port;
+        value &= ~(0xF << (pin * 4));
+        value |=  (0x8 << (pin * 4)); // CNF=10, MODE=00
+        *port = value;
+
+        // pull-up
+        b->port->BSRR = b->pin_mask;   // nastav high
+    }
+    initExti();
+}
+
+void BUTTON_delayMs(uint32_t ms) {
+    uint32_t start = sys_ms;
+    while ((sys_ms - start) < ms) {
+        // __WFI(); // šetrí CPU
+    }
+}
+
+void EXTI0_IRQHandler(void) {
+    irqGlobalHandler();
+}
+void EXTI1_IRQHandler(void) {
+    irqGlobalHandler();
+}
+void EXTI2_IRQHandler(void) {
+    irqGlobalHandler();
+}
+void EXTI3_IRQHandler(void) {
+    irqGlobalHandler();
+}
+void EXTI4_IRQHandler(void) {
+    irqGlobalHandler();
+}
+void EXTI9_5_IRQHandler(void) {
+    irqGlobalHandler();
+}
+void EXTI15_10_IRQHandler(void)
+{
+    irqGlobalHandler();
+}
+
+void SysTick_Handler(void)
+{
+    sys_ms++;
+    for (uint32_t i = 0; i < BUTTON_COUNT; i++) {
+        if (buttons[i].active) {
+            buttonProcess(&buttons[i]);
+            buttonMulticlickProcess(&buttons[i]);
+        }
+    }
+}

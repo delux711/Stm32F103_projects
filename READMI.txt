@@ -1,0 +1,27 @@
+stm32f103-project/
+│
+├── apps/
+│   ├── main_app/
+│   │   └── main.c
+│
+├── drivers/
+│   ├── button/
+│   ├── i2c/
+│
+├── bsp/
+│   └── stm32f103/
+│       ├── bsp_gpio.c
+│       ├── bsp_irq.c
+│       ├── bsp_exti.c
+│
+├── cmsis/
+│   └── device/
+│       └── stm32f103/
+│           ├── system_stm32f10x.c
+│           ├── startup_stm32f10x_md.s
+│           └── RTE_Device.h
+│
+│
+├── project/
+│   ├── keil_main_app/
+│   ├── keil_test_button/
