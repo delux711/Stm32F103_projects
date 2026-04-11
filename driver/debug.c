@@ -40,6 +40,15 @@ static void initSWO(void)
 
 void DEBUG_initTrace(uint32_t cpu_freq_hz)
 {
+    // inicializace pinu pro LED (PC13) a SWO (PB3)
+    uint32_t reg;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
+    reg = GPIOC->CRH;
+    reg &= ~((uint32_t)GPIO_CRH_CNF13 | GPIO_CRH_MODE13);
+    reg |= GPIO_CRH_MODE13; // 11: Output mode, max speed 50 MHz
+    DEBUG_ledPinOff();
+    GPIOC->CRH = reg;
+
     if(debuggerActive())
     {
         initSWO();

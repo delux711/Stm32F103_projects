@@ -11,9 +11,15 @@
 			"path": "../../driver"
 		},
 		{
+			"path": "../../bsp",
+		},
+		{
+			"path": "./"
+		},
+		/*{
 			"name": "STM32F1xx_DFP Include",
 			"path": "c:/Keil_v5/Packs/Keil/STM32F1xx_DFP/2.4.0/Device/Include"
-		}
+		}*/
 	],
 	"settings": {
 		"files.exclude": {
@@ -40,7 +46,9 @@
 			"**/*.scvd": true,
 			"**/JLinkLog.txt": true,
 			"**/JLinkSettings.ini": true,
-			"**/*.uvguix.*": true
+			"**/*.uvprojx": true,
+			"**/*.uvoptx": true,
+			"**/*.uvguix.P": true
 		}
 	}
 }
