@@ -1,6 +1,8 @@
 #ifndef DEBUG_H
 #define DEBUG_H
-#include <stm32f10x.h>
+#include "stm32f10x.h"
+#include <stdbool.h>
+
 
 void DEBUG_initTrace(uint32_t cpu_freq_hz);
 
