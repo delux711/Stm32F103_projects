@@ -42,17 +42,19 @@ typedef struct {
 
 // Initialization
 void BUTTON_init(const volatile btn_t *button_configs, uint32_t count);
+void BUTTON_irqGlobalHandler(void);
+void BUTTON_process(void); // call from SysTick_Handler for active buttons
 void BUTTON_delayMs(uint32_t ms);
 
 // IRQ handlers implemented in button.c
-void EXTI0_IRQHandler(void);
-void EXTI1_IRQHandler(void);
-void EXTI2_IRQHandler(void);
-void EXTI3_IRQHandler(void);
-void EXTI4_IRQHandler(void);
-void EXTI9_5_IRQHandler(void);
-void EXTI15_10_IRQHandler(void);
-void SysTick_Handler(void);
+// void EXTI0_IRQHandler(void);
+// void EXTI1_IRQHandler(void);
+// void EXTI2_IRQHandler(void); PAPU
+// void EXTI3_IRQHandler(void);
+// void EXTI4_IRQHandler(void);
+// void EXTI9_5_IRQHandler(void);
+// void EXTI15_10_IRQHandler(void);
+// void SysTick_Handler(void);
 
 #ifdef __cplusplus
 }

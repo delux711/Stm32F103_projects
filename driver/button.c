@@ -7,12 +7,10 @@
 #define MULTICLICK_MS     400   // max pauza medzi klikmi
 
 static uint8_t BUTTON_totalCount = 0u;
-volatile uint32_t sys_ms;
 static volatile btn_t *buttons;
 
 static void initExti(void);
 static void initGlobalVars(void);
-static void irqGlobalHandler(void);
 
 static inline uint8_t buttonRaw(const volatile btn_t *b)
 {
@@ -134,21 +132,7 @@ static void initExti(void)
 }
 
 static void initGlobalVars(void) {
-    sys_ms = 0u;
     BUTTON_totalCount = 0u;
-}
-
-static void irqGlobalHandler(void) {
-    uint32_t pending = EXTI->PR & EXTI->IMR;
-
-    for (uint32_t i = 0; i < BUTTON_totalCount; i++) {
-        uint32_t mask = (1 << buttons[i].exti_line);
-        if (pending & mask) {
-            EXTI->PR = mask;                 // clear pending
-            EXTI->IMR &= ~mask;              // vypnúť EXTI
-            buttons[i].active = 1;           // prejsť do polling
-        }
-    }
 }
 
 void BUTTON_init(const volatile btn_t *button_configs, uint32_t count)
@@ -188,39 +172,20 @@ void BUTTON_init(const volatile btn_t *button_configs, uint32_t count)
     initExti();
 }
 
-void BUTTON_delayMs(uint32_t ms) {
-    uint32_t start = sys_ms;
-    while ((sys_ms - start) < ms) {
-        // __WFI(); // šetrí CPU
+void BUTTON_irqGlobalHandler(void) {
+    uint32_t pending = EXTI->PR & EXTI->IMR;
+
+    for (uint32_t i = 0; i < BUTTON_totalCount; i++) {
+        uint32_t mask = (1 << buttons[i].exti_line);
+        if (pending & mask) {
+            EXTI->PR = mask;                 // clear pending
+            EXTI->IMR &= ~mask;              // vypnúť EXTI
+            buttons[i].active = 1;           // prejsť do polling
+        }
     }
 }
 
-void EXTI0_IRQHandler(void) {
-    irqGlobalHandler();
-}
-void EXTI1_IRQHandler(void) {
-    irqGlobalHandler();
-}
-void EXTI2_IRQHandler(void) {
-    irqGlobalHandler();
-}
-void EXTI3_IRQHandler(void) {
-    irqGlobalHandler();
-}
-void EXTI4_IRQHandler(void) {
-    irqGlobalHandler();
-}
-void EXTI9_5_IRQHandler(void) {
-    irqGlobalHandler();
-}
-void EXTI15_10_IRQHandler(void)
-{
-    irqGlobalHandler();
-}
-
-void SysTick_Handler(void)
-{
-    sys_ms++;
+void BUTTON_process(void) {
     for (uint32_t i = 0; i < BUTTON_totalCount; i++) {
         if (buttons[i].active) {
             buttonProcess(&buttons[i]);

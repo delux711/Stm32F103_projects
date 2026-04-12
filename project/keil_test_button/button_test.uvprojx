@@ -408,6 +408,16 @@
               <FileType>2</FileType>
               <FilePath>..\..\cmsis\device\STM32F103C8\startup_stm32f10x_md.s</FilePath>
             </File>
+            <File>
+              <FileName>bsp_irq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\bsp\STM32F103C8\bsp_irq.c</FilePath>
+            </File>
+            <File>
+              <FileName>systick.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\driver\systick.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
@@ -813,6 +823,16 @@
               <FileName>startup_stm32f10x_md.s</FileName>
               <FileType>2</FileType>
               <FilePath>..\..\cmsis\device\STM32F103C8\startup_stm32f10x_md.s</FilePath>
+            </File>
+            <File>
+              <FileName>bsp_irq.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\bsp\STM32F103C8\bsp_irq.c</FilePath>
+            </File>
+            <File>
+              <FileName>systick.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\driver\systick.c</FilePath>
             </File>
           </Files>
         </Group>
