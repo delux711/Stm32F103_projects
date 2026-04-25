@@ -6,6 +6,9 @@
 #ifdef DRIVER_SYSTICK_USE
 #include "systick.h"
 #endif
+#ifdef DRIVER_RS485_USE
+#include "rs485.h"
+#endif
 
 void EXTI0_IRQHandler(void) {
   #ifdef DRIVER_BUTTON_USE
@@ -51,5 +54,12 @@ void SysTick_Handler(void)
   #ifdef DRIVER_BUTTON_USE
     BUTTON_process(); // spracovanie aktivnych tlacidiel
   #endif
+}
+#endif
+
+#ifdef DRIVER_RS485_USE
+void USART1_IRQHandler(void)
+{
+    RS485_usartIrqHandler();
 }
 #endif
