@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h> // for memcpy
 #include "button.h"
 #include "debug.h"
 
@@ -7,7 +8,7 @@
 #define MULTICLICK_MS     400   // max pauza medzi klikmi
 
 static uint8_t BUTTON_totalCount = 0u;
-static volatile btn_t *buttons;
+static volatile btn_t buttons[10]; // max 10 tlačidiel
 
 static void initExti(void);
 static void initGlobalVars(void);
@@ -97,7 +98,7 @@ static void initExti(void)
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
 
     for (uint32_t i = 0; i < BUTTON_totalCount; i++) {
-        volatile btn_t *b = (volatile btn_t *)&buttons[i];
+        volatile btn_t *b = &buttons[i];
 
         // Mapovanie EXTI
         uint32_t line = b->exti_line;
@@ -139,7 +140,7 @@ void BUTTON_init(const volatile btn_t *button_configs, uint32_t count)
 {
     initGlobalVars();
     BUTTON_totalCount = count;
-    buttons = (volatile btn_t *)button_configs;
+    memcpy((void *)buttons, (const void *)button_configs, count * sizeof(btn_t));
 
     for (uint32_t i = 0; i < BUTTON_totalCount; i++) {
         volatile btn_t *b = (volatile btn_t *)&buttons[i];
