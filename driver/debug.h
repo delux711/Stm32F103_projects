@@ -8,7 +8,9 @@ void DEBUG_initTrace(uint32_t cpu_freq_hz);
 
 static inline void DEBUG_sendChar(uint8_t ch, uint8_t channel)
 {
-    while (!(ITM->PORT[channel].u32));
+    if ((CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) == 0u) return;
+    if ((ITM->TCR & ITM_TCR_ITMENA_Msk) == 0u) return;
+    if ((ITM->TER & (1UL << channel)) == 0u) return;
     ITM->PORT[channel].u8 = ch;
 }
 

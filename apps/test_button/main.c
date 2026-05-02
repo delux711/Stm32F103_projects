@@ -21,6 +21,7 @@ int main(void) {
     SystemCoreClockUpdate();
 
     DEBUG_initTrace(SystemCoreClock);
+    initLedPin();
     BUTTON_init(buttonInit, BUTTON_COUNT);
     SysTick_Config(SystemCoreClock / 1000);
 
@@ -39,7 +40,7 @@ int main(void) {
 static void btn0_single(void) {
     DEBUG_sendChar('S', 0);
     DEBUG_ledPinToggle();
-    // GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR13) ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
+    GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR13) ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
 }
 static void btn0_double(void) {
     DEBUG_sendChar('D', 0);
