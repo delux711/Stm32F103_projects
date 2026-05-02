@@ -14,6 +14,18 @@ static inline void DEBUG_sendChar(uint8_t ch, uint8_t channel)
     ITM->PORT[channel].u8 = ch;
 }
 
+static inline void DEBUG_sendString(const char *str, uint8_t channel)
+{
+    if (str == 0) return;
+
+    while (*str != '\0') {
+        DEBUG_sendChar((uint8_t)*str, channel);
+        str++;
+    }
+}
+
+
+
 static inline void DEBUG_ledPinToggle(void) {
     // bit banding pre PC13 ODR registra je adresa 0x422201B4 = 0x42000000 + (0x1100c*32)+(0xD*4)
     // adresa bitu BS13 pre PORTC je: 0x42220234 = 0x42000000 + (0x11010*32)+(13*4)

@@ -18,6 +18,7 @@ typedef struct
     IRQn_Type usartIrqn;
     volatile uint32_t *usartRccReg;
     uint32_t usartRccBit;
+    uint32_t baudrate;
 } RS485_config_t;
 
 void RS485_init(const RS485_config_t *config);

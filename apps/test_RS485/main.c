@@ -2,6 +2,7 @@
 #include "stm32f10x.h"
 #include "system_stm32f10x.h"
 #include "rs485.h"
+#include "debug.h"
 
 static const RS485_config_t rs485_config = {
     .txPort      = GPIOB,
@@ -15,7 +16,8 @@ static const RS485_config_t rs485_config = {
     .usart          = USART1,
     .usartIrqn      = USART1_IRQn,
     .usartRccReg    = &RCC->APB2ENR,
-    .usartRccBit    = RCC_APB2ENR_USART1EN
+    .usartRccBit    = RCC_APB2ENR_USART1EN,
+    .baudrate       = 9600u
 };
 
 int main(void)
@@ -23,7 +25,9 @@ int main(void)
     SystemInit();
     SystemCoreClockUpdate();
 
+    DEBUG_initTrace(SystemCoreClock);
     RS485_init(&rs485_config);
+    DEBUG_sendString("RS485 test\r\n", 0);
 
     while (1)
     {

@@ -5,9 +5,10 @@
 
 #include "stm32f10x.h"
 #include "systick.h"
+#include "debug.h"
 
 #define FLASH_ID_ADDRESS  (0x0801FC00u)
-#define DEFAULT_NODE_ID   (0xF1u)
+#define DEFAULT_NODE_ID   '1'//(0xF1u)
 #define DELAY_RESPONSE_MS (3u)
 #define RX_BUFFER_SIZE    (64u)
 
@@ -151,9 +152,9 @@ static void txDisable(void)
 static void usartInit(void)
 {
 	*rs485_config.usartRccReg |= rs485_config.usartRccBit;
-	usart->BRR = SystemCoreClock / 9600u;
+	usart->BRR = SystemCoreClock / rs485_config.baudrate;
 	usart->CR1 =
-		USART_CR1_PCE |
+		// USART_CR1_PCE | // Parity control enable, parity selection is EVEN by default
 		USART_CR1_RE |
 		USART_CR1_TE |
 		USART_CR1_WAKE |
@@ -226,8 +227,10 @@ static void processCommand(void)
 
 void RS485_usartIrqHandler(void)
 {
+    DEBUG_sendString("IRQ-UART\r\n", 0);
 	if ((usart->CR1 & USART_CR1_WAKE) != 0u)
 	{
+        DEBUG_sendString("Wakeup\r\n", 0);
 		usart->CR1 &= ~USART_CR1_UE;
 		usart->CR1 = (usart->CR1 & ~USART_CR1_WAKE) | USART_CR1_M;
 		usart->CR1 |= USART_CR1_UE;
@@ -239,6 +242,9 @@ void RS485_usartIrqHandler(void)
 	{
 		uint16_t data = usart->DR;
 		uint8_t c = (uint8_t)(data & 0xFFu);
+        DEBUG_sendString("R-ch:", 0);
+        DEBUG_sendChar(c, 0);
+        DEBUG_sendString("\r\n", 0);
 
 		if (command_pending)
 		{
@@ -247,12 +253,14 @@ void RS485_usartIrqHandler(void)
 
 		if (c == '\n')
 		{
+            DEBUG_sendString("Command received\r\n", 0);
 			rx_buffer[rx_index] = 0u;
 			command_due_tick = SYS_getMs() + DELAY_RESPONSE_MS;
 			command_pending = true;
 		}
 		else if ((rx_index == 0u) && (c != node_id))
 		{
+            DEBUG_sendString("Invalid node ID\r\n", 0);
 			goToMuteMode();
 			return;
 		}
@@ -264,6 +272,7 @@ void RS485_usartIrqHandler(void)
 
 	if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) != 0u)
 	{
+        DEBUG_sendString("USART error\r\n", 0);
 		(void)usart->SR;
 		(void)usart->DR;
 		goToMuteMode();
