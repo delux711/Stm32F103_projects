@@ -67,8 +67,9 @@ static void initGlobalVariables(void)
 
 static void goToMuteMode(void)
 {
-    usart->CR1 &= ~USART_CR1_UE; // disable USART to change mode
-    usart->CR1 = (usart->CR1 & ~USART_CR1_M) | USART_CR1_RWU | USART_CR1_WAKE;  // back to mute
+    DEBUG_sendString("Entering mute mode\r\n", 0);
+    usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
+    usart->CR1 = (usart->CR1 & ~USART_CR1_M) | USART_CR1_RWU | USART_CR1_WAKE; // back to mute
     usart->CR1 |= USART_CR1_UE;
 }
 
@@ -224,7 +225,7 @@ void RS485_usartIrqHandler(void)
     // DEBUG_sendString("IRQ-UART\r\n", 0);
     if ((usart->CR1 & USART_CR1_WAKE) != 0u)
     {
-        // DEBUG_sendString("Wakeup\r\n", 0);
+        DEBUG_sendString("W", 0);
         usart->CR1 &= ~USART_CR1_UE;
         usart->CR1 = (usart->CR1 & ~USART_CR1_WAKE) | USART_CR1_M;
         usart->CR1 |= USART_CR1_UE;
