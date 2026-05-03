@@ -14,7 +14,8 @@
 
 #define GPIO_CFG_INPUT_FLOATING       (0x4u)
 #define GPIO_CFG_OUTPUT_PP_2MHZ       (0x2u)
-#define GPIO_CFG_OUTPUT_AF_PP_50MHZ   (0xBu)
+#define GPIO_CFG_OUTPUT_AF_PP_2MHZ    (0xAu)
+// #define GPIO_CFG_OUTPUT_AF_OD_2MHZ    (0xEu)
 
 static uint8_t readNodeId(void);
 static void initGlobalVariables(void);
@@ -44,44 +45,43 @@ void RS485_init(const RS485_config_t *config)
     initGlobalVariables();
     gpioInit(&rs485_config);
     usartInit();
-    SysTick_Config(SystemCoreClock / 1000u);
 }
 
 void RS485_process(void)
 {
-	if (command_pending && ((int32_t)(SYS_getMs() - command_due_tick) >= 0))
-	{
-		processCommand();
-		rx_index = 0u;
-		command_pending = false;
-	}
+    if (command_pending && ((int32_t)(SYS_getMs() - command_due_tick) >= 0))
+    {
+        processCommand();
+        rx_index = 0u;
+        command_pending = false;
+    }
 }
 
 static void initGlobalVariables(void)
 {
-	node_id = readNodeId();
-	rx_index = 0u;
-	command_due_tick = 0u;
-	command_pending = false;
+    node_id = readNodeId();
+    rx_index = 0u;
+    command_due_tick = 0u;
+    command_pending = false;
 }
 
 static void goToMuteMode(void)
 {
-	usart->CR1 &= ~USART_CR1_UE;
-	usart->CR1 = (usart->CR1 & ~USART_CR1_M) | USART_CR1_RWU | USART_CR1_WAKE;
-	usart->CR1 |= USART_CR1_UE;
+    usart->CR1 &= ~USART_CR1_UE; // disable USART to change mode
+    usart->CR1 = (usart->CR1 & ~USART_CR1_M) | USART_CR1_RWU | USART_CR1_WAKE;  // back to mute
+    usart->CR1 |= USART_CR1_UE;
 }
 
 static uint8_t readNodeId(void)
 {
-	uint8_t id = *(volatile uint8_t *)FLASH_ID_ADDRESS;
+    uint8_t id = *(volatile uint8_t *)FLASH_ID_ADDRESS;
 
-	if ((id == 0xFFu) || (id == 0x00u))
-	{
-		return DEFAULT_NODE_ID;
-	}
+    if ((id == 0xFFu) || (id == 0x00u))
+    {
+        return DEFAULT_NODE_ID;
+    }
 
-	return id;
+    return id;
 }
 
 static void gpioInit(const RS485_config_t *config)
@@ -93,7 +93,7 @@ static void gpioInit(const RS485_config_t *config)
 
     AFIO->MAPR = (AFIO->MAPR & ~config->usartRemapMask) | config->usartRemap;
 
-    gpioConfigPin(config->txPort, config->txPin, GPIO_CFG_OUTPUT_AF_PP_50MHZ);
+    gpioConfigPin(config->txPort, config->txPin, GPIO_CFG_OUTPUT_AF_PP_2MHZ);
     gpioConfigPin(config->rxPort, config->rxPin, GPIO_CFG_INPUT_FLOATING);
     gpioConfigPin(config->dirPort, config->dirPin, GPIO_CFG_OUTPUT_PP_2MHZ);
 
@@ -151,28 +151,25 @@ static void txDisable(void)
 
 static void usartInit(void)
 {
-	*rs485_config.usartRccReg |= rs485_config.usartRccBit;
-	usart->BRR = SystemCoreClock / rs485_config.baudrate;
-	usart->CR1 =
-		// USART_CR1_PCE | // Parity control enable, parity selection is EVEN by default
-		USART_CR1_RE |
-		USART_CR1_TE |
-		USART_CR1_WAKE |
-		USART_CR1_RXNEIE;
-	usart->CR2 = (node_id & USART_CR2_ADD);
-	usart->CR1 |= USART_CR1_RWU;
-	usart->CR1 |= USART_CR1_UE;
+    *rs485_config.usartRccReg |= rs485_config.usartRccBit;
+    usart->BRR = SystemCoreClock / rs485_config.baudrate;
+    usart->CR1 =
+        USART_CR1_PCE |  // Parity control enable, parity selection is EVEN by default
+        USART_CR1_RE |
+        USART_CR1_TE |
+        USART_CR1_WAKE | // Wake on address
+        USART_CR1_RXNEIE;
+    usart->CR2 = (node_id & USART_CR2_ADD);
+    usart->CR1 |= USART_CR1_RWU; // start in mute mode
+    usart->CR1 |= USART_CR1_UE;
 
-	NVIC_EnableIRQ(rs485_config.usartIrqn);
+    NVIC_EnableIRQ(rs485_config.usartIrqn);
 }
 
 static void usartSendChar(char c)
 {
-	while ((usart->SR & USART_SR_TXE) == 0u)
-	{
-	}
-
-	usart->DR = (uint16_t)c;
+    while ((usart->SR & USART_SR_TXE) == 0u) { }
+    usart->DR = (uint16_t)c;
 }
 
 static void usartSendString(const char *s)
@@ -185,96 +182,94 @@ static void usartSendString(const char *s)
         s++;
     }
 
-    while ((usart->SR & USART_SR_TC) == 0u)
-    {
-    }
-
+    while ((usart->SR & USART_SR_TC) == 0u) { }
     txDisable();
     goToMuteMode();
 }
 
 static void processCommand(void)
 {
-	if (strcmp((const char *)&rx_buffer[1u], "PING") == 0)
-	{
-		usartSendString("PONG\r\n");
-	}
-	else if (strcmp((const char *)&rx_buffer[1u], "TEMP") == 0)
-	{
-		usartSendString("TEMP=25.4\r\n");
-	}
-	else if (strcmp((const char *)&rx_buffer[1u], "PIR") == 0)
-	{
-		usartSendString("PIR=0\r\n");
-	}
-	else if (strcmp((const char *)&rx_buffer[1u], "ALL") == 0)
-	{
-		usartSendString("TEMP=25.4,PIR=0,HUM=40,LUX=120\r\n");
-	}
-	else if (strcmp((const char *)&rx_buffer[1u], "LENKA") == 0)
-	{
-		usartSendString("Pusztaiova\r\n");
-	}
-	else if (strcmp((const char *)&rx_buffer[1u], "PARKSIDE") == 0)
-	{
-		usartSendString("POHAR\r\n");
-	}
-	else
-	{
-		usartSendString("ERR\r\n");
-	}
+    if (strcmp((const char *)&rx_buffer[1u], "PING") == 0)
+    {
+        usartSendString("PONG\r\n");
+    }
+    else if (strcmp((const char *)&rx_buffer[1u], "TEMP") == 0)
+    {
+        usartSendString("TEMP=25.4\r\n");
+    }
+    else if (strcmp((const char *)&rx_buffer[1u], "PIR") == 0)
+    {
+        usartSendString("PIR=0\r\n");
+    }
+    else if (strcmp((const char *)&rx_buffer[1u], "ALL") == 0)
+    {
+        usartSendString("TEMP=25.4,PIR=0,HUM=40,LUX=120\r\n");
+    }
+    else if (strcmp((const char *)&rx_buffer[1u], "LENKA") == 0)
+    {
+        usartSendString("Pusztaiova\r\n");
+    }
+    else if (strcmp((const char *)&rx_buffer[1u], "PARKSIDE") == 0)
+    {
+        usartSendString("POHAR\r\n");
+    }
+    else
+    {
+        usartSendString("ERR\r\n");
+    }
 }
 
 void RS485_usartIrqHandler(void)
 {
-    DEBUG_sendString("IRQ-UART\r\n", 0);
-	if ((usart->CR1 & USART_CR1_WAKE) != 0u)
-	{
-        DEBUG_sendString("Wakeup\r\n", 0);
-		usart->CR1 &= ~USART_CR1_UE;
-		usart->CR1 = (usart->CR1 & ~USART_CR1_WAKE) | USART_CR1_M;
-		usart->CR1 |= USART_CR1_UE;
-		(void)usart->DR;
-		return;
-	}
+    // DEBUG_sendString("IRQ-UART\r\n", 0);
+    if ((usart->CR1 & USART_CR1_WAKE) != 0u)
+    {
+        // DEBUG_sendString("Wakeup\r\n", 0);
+        usart->CR1 &= ~USART_CR1_UE;
+        usart->CR1 = (usart->CR1 & ~USART_CR1_WAKE) | USART_CR1_M;
+        usart->CR1 |= USART_CR1_UE;
+        (void)usart->DR;  // read DR to clear
+        return;
+    }
 
-	if ((usart->SR & USART_SR_RXNE) != 0u)
-	{
-		uint16_t data = usart->DR;
-		uint8_t c = (uint8_t)(data & 0xFFu);
-        DEBUG_sendString("R-ch:", 0);
-        DEBUG_sendChar(c, 0);
-        DEBUG_sendString("\r\n", 0);
+    if ((usart->SR & USART_SR_RXNE) != 0u)
+    {
+        uint16_t data = usart->DR;
+        uint8_t c = (uint8_t)(data & 0xFFu);
+        // DEBUG_sendString("R-ch:", 0);
+        // DEBUG_sendChar(c, 0);
+        // DEBUG_sendString("\r\n", 0);
 
-		if (command_pending)
-		{
-			return;
-		}
+        if (command_pending)
+        {
+            return;
+        }
 
-		if (c == '\n')
-		{
+        if (c == '\n')
+        {
             DEBUG_sendString("Command received\r\n", 0);
-			rx_buffer[rx_index] = 0u;
-			command_due_tick = SYS_getMs() + DELAY_RESPONSE_MS;
-			command_pending = true;
-		}
-		else if ((rx_index == 0u) && (c != node_id))
-		{
+            rx_buffer[rx_index] = 0u;
+            command_due_tick = SYS_getMs() + DELAY_RESPONSE_MS;
+            command_pending = true;
+        }
+        else if ((rx_index == 0u) && (c != node_id))  // first byte is address, must match node_id
+        {
             DEBUG_sendString("Invalid node ID\r\n", 0);
-			goToMuteMode();
-			return;
-		}
-		else if ((rx_index < (RX_BUFFER_SIZE - 1u)) && (c != '\r'))
-		{
-			rx_buffer[rx_index++] = c;
-		}
-	}
+            goToMuteMode();
+            return;
+        }
+        else if ((rx_index < (RX_BUFFER_SIZE - 1u)) && (c != '\r'))
+        {
+            rx_buffer[rx_index++] = c;
+        }
+    }
 
-	if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) != 0u)
-	{
+    if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) != 0u)
+    {
         DEBUG_sendString("USART error\r\n", 0);
-		(void)usart->SR;
-		(void)usart->DR;
-		goToMuteMode();
-	}
+        (void)usart->SR; // clear error flags
+        (void)usart->DR;
+        goToMuteMode();
+        return;
+    }
 }
