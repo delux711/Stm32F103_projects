@@ -31,6 +31,8 @@ static volatile uint8_t rx_buffer[RX_BUFFER_SIZE];
 static volatile uint8_t rx_index = 0u;
 static volatile uint32_t command_due_tick = 0u;
 static volatile bool command_pending = false;
+static const RS485_command_t *rs485_command_table = 0;
+static uint32_t rs485_command_count = 0u;
 
 void RS485_init(const RS485_config_t *config)
 {
@@ -39,6 +41,12 @@ void RS485_init(const RS485_config_t *config)
     RS485_initGlobalVariables();
     RS485_gpioInit(&rs485_config);
     RS485_usartInit();
+}
+
+void RS485_setCommandTable(const RS485_command_t *command_table, uint32_t command_count)
+{
+    rs485_command_table = command_table;
+    rs485_command_count = command_count;
 }
 
 void RS485_process(void)
@@ -145,34 +153,40 @@ static void RS485_usartSendString(const char *s)
 
 static void RS485_processCommand(void)
 {
-    if (strcmp((const char *)&rx_buffer[1u], "PING") == 0)
-    {
-        RS485_usartSendString("PONG\r\n");
-    }
-    else if (strcmp((const char *)&rx_buffer[1u], "TEMP") == 0)
-    {
-        RS485_usartSendString("TEMP=25.4\r\n");
-    }
-    else if (strcmp((const char *)&rx_buffer[1u], "PIR") == 0)
-    {
-        RS485_usartSendString("PIR=0\r\n");
-    }
-    else if (strcmp((const char *)&rx_buffer[1u], "ALL") == 0)
-    {
-        RS485_usartSendString("TEMP=25.4,PIR=0,HUM=40,LUX=120\r\n");
-    }
-    else if (strcmp((const char *)&rx_buffer[1u], "LENKA") == 0)
-    {
-        RS485_usartSendString("Pusztaiova\r\n");
-    }
-    else if (strcmp((const char *)&rx_buffer[1u], "PARKSIDE") == 0)
-    {
-        RS485_usartSendString("POHAR\r\n");
-    }
-    else
+    const char *command = (const char *)&rx_buffer[1u];
+
+    if ((rs485_command_table == 0) || (rs485_command_count == 0u))
     {
         RS485_usartSendString("ERR\r\n");
+        return;
     }
+
+    for (uint32_t i = 0u; i < rs485_command_count; i++)
+    {
+        const RS485_command_t *entry = &rs485_command_table[i];
+
+        if ((entry->command == 0) || (entry->callback == 0))
+        {
+            continue;
+        }
+
+        if (strcmp(command, entry->command) == 0)
+        {
+            const char *response = entry->callback();
+
+            if (response != 0)
+            {
+                RS485_usartSendString(response);
+            }
+            else
+            {
+                RS485_usartSendString("ERR\r\n");
+            }
+            return;
+        }
+    }
+
+    RS485_usartSendString("ERR\r\n");
 }
 
 void RS485_usartIrqHandler(void)

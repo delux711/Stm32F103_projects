@@ -21,7 +21,16 @@ typedef struct
     uint32_t baudrate;
 } RS485_config_t;
 
+typedef const char *(*RS485_commandCallback_t)(void);
+
+typedef struct
+{
+    const char *command;
+    RS485_commandCallback_t callback;
+} RS485_command_t;
+
 void RS485_init(const RS485_config_t *config);
+void RS485_setCommandTable(const RS485_command_t *command_table, uint32_t command_count);
 void RS485_process(void);
 void RS485_usartIrqHandler(void);
 
