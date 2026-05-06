@@ -11,12 +11,12 @@
 //   return (ch);
 // }
 
-static inline int debuggerActive(void)
+static inline int DEBUG_debuggerActive(void)
 {
     return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
 }
 
-static void initSWO(void)
+static void DEBUG_initSwo(void)
 {
     /* Enable clocks */
     RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;   // GPIOB clock
@@ -49,9 +49,9 @@ void DEBUG_initTrace(uint32_t cpu_freq_hz)
     DEBUG_ledPinOff();
     GPIOC->CRH = reg;
 
-    if(debuggerActive())
+    if(DEBUG_debuggerActive())
     {
-        initSWO();
+        DEBUG_initSwo();
         /* Enable trace in core debug */
         CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
         DBGMCU->CR |= DBGMCU_CR_TRACE_IOEN;

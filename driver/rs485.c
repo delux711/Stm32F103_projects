@@ -6,29 +6,23 @@
 #include "stm32f10x.h"
 #include "systick.h"
 #include "debug.h"
+#include "gpio.h"
 
 #define FLASH_ID_ADDRESS  (0x0801FC00u)
 #define DEFAULT_NODE_ID   '1'//(0xF1u)
 #define DELAY_RESPONSE_MS (3u)
 #define RX_BUFFER_SIZE    (64u)
 
-#define GPIO_CFG_INPUT_FLOATING       (0x4u)
-#define GPIO_CFG_OUTPUT_PP_2MHZ       (0x2u)
-#define GPIO_CFG_OUTPUT_AF_PP_2MHZ    (0xAu)
-// #define GPIO_CFG_OUTPUT_AF_OD_2MHZ    (0xEu)
-
-static uint8_t readNodeId(void);
-static void initGlobalVariables(void);
-static void gpioInit(const RS485_config_t *config);
-static void gpioEnableClock(GPIO_TypeDef *port);
-static void gpioConfigPin(GPIO_TypeDef *port, uint8_t pin, uint32_t config);
-static void txEnable(void);
-static void txDisable(void);
-static void usartInit(void);
-static void goToMuteMode(void);
-static void usartSendChar(char c);
-static void usartSendString(const char *s);
-static void processCommand(void);
+static uint8_t RS485_readNodeId(void);
+static void RS485_initGlobalVariables(void);
+static void RS485_gpioInit(const RS485_config_t *config);
+static void RS485_txEnable(void);
+static void RS485_txDisable(void);
+static void RS485_usartInit(void);
+static void RS485_goToMuteMode(void);
+static void RS485_usartSendChar(char c);
+static void RS485_usartSendString(const char *s);
+static void RS485_processCommand(void);
 
 static RS485_config_t rs485_config;
 static USART_TypeDef *usart;
@@ -42,30 +36,30 @@ void RS485_init(const RS485_config_t *config)
 {
     rs485_config = *config;
     usart = config->usart;
-    initGlobalVariables();
-    gpioInit(&rs485_config);
-    usartInit();
+    RS485_initGlobalVariables();
+    RS485_gpioInit(&rs485_config);
+    RS485_usartInit();
 }
 
 void RS485_process(void)
 {
     if (command_pending && ((int32_t)(SYS_getMs() - command_due_tick) >= 0))
     {
-        processCommand();
+        RS485_processCommand();
         rx_index = 0u;
         command_pending = false;
     }
 }
 
-static void initGlobalVariables(void)
+static void RS485_initGlobalVariables(void)
 {
-    node_id = readNodeId();
+    node_id = RS485_readNodeId();
     rx_index = 0u;
     command_due_tick = 0u;
     command_pending = false;
 }
 
-static void goToMuteMode(void)
+static void RS485_goToMuteMode(void)
 {
     DEBUG_sendString("Entering mute mode\r\n", 0);
     usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
@@ -73,7 +67,7 @@ static void goToMuteMode(void)
     usart->CR1 |= USART_CR1_UE;
 }
 
-static uint8_t readNodeId(void)
+static uint8_t RS485_readNodeId(void)
 {
     uint8_t id = *(volatile uint8_t *)FLASH_ID_ADDRESS;
 
@@ -85,72 +79,33 @@ static uint8_t readNodeId(void)
     return id;
 }
 
-static void gpioInit(const RS485_config_t *config)
+static void RS485_gpioInit(const RS485_config_t *config)
 {
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
-    gpioEnableClock(config->txPort);
-    gpioEnableClock(config->rxPort);
-    gpioEnableClock(config->dirPort);
+    GPIO_enableClock(config->txPort);
+    GPIO_enableClock(config->rxPort);
+    GPIO_enableClock(config->dirPort);
 
     AFIO->MAPR = (AFIO->MAPR & ~config->usartRemapMask) | config->usartRemap;
 
-    gpioConfigPin(config->txPort, config->txPin, GPIO_CFG_OUTPUT_AF_PP_2MHZ);
-    gpioConfigPin(config->rxPort, config->rxPin, GPIO_CFG_INPUT_FLOATING);
-    gpioConfigPin(config->dirPort, config->dirPin, GPIO_CFG_OUTPUT_PP_2MHZ);
+    GPIO_configPin(config->txPort, config->txPin, GPIO_CFG_OUTPUT_AF_PP_2MHZ);
+    GPIO_configPin(config->rxPort, config->rxPin, GPIO_CFG_INPUT_FLOATING);
+    GPIO_configPin(config->dirPort, config->dirPin, GPIO_CFG_OUTPUT_PP_2MHZ);
 
-    txDisable();
+    RS485_txDisable();
 }
 
-static void gpioEnableClock(GPIO_TypeDef *port)
-{
-    if (port == GPIOA)
-    {
-        RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-    }
-    else if (port == GPIOB)
-    {
-        RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;
-    }
-    else if (port == GPIOC)
-    {
-        RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-    }
-}
-
-static void gpioConfigPin(GPIO_TypeDef *port, uint8_t pin, uint32_t config)
-{
-    volatile uint32_t *reg;
-    uint32_t shift;
-    uint32_t value;
-
-    if (pin < 8u)
-    {
-        reg = &port->CRL;
-        shift = (uint32_t)pin * 4u;
-    }
-    else
-    {
-        reg = &port->CRH;
-        shift = (uint32_t)(pin - 8u) * 4u;
-    }
-
-    value = *reg;
-    value &= ~(0xFu << shift);
-    value |= (config << shift);
-    *reg = value;
-}
-
-static void txEnable(void)
+static void RS485_txEnable(void)
 {
     rs485_config.dirPort->BSRR = (uint32_t)1u << rs485_config.dirPin;
 }
 
-static void txDisable(void)
+static void RS485_txDisable(void)
 {
     rs485_config.dirPort->BRR = (uint32_t)1u << rs485_config.dirPin;
 }
 
-static void usartInit(void)
+static void RS485_usartInit(void)
 {
     *rs485_config.usartRccReg |= rs485_config.usartRccBit;
     usart->BRR = SystemCoreClock / rs485_config.baudrate;
@@ -167,56 +122,56 @@ static void usartInit(void)
     NVIC_EnableIRQ(rs485_config.usartIrqn);
 }
 
-static void usartSendChar(char c)
+static void RS485_usartSendChar(char c)
 {
     while ((usart->SR & USART_SR_TXE) == 0u) { }
     usart->DR = (uint16_t)c;
 }
 
-static void usartSendString(const char *s)
+static void RS485_usartSendString(const char *s)
 {
-    txEnable();
+    RS485_txEnable();
 
     while (*s != '\0')
     {
-        usartSendChar(*s);
+        RS485_usartSendChar(*s);
         s++;
     }
 
     while ((usart->SR & USART_SR_TC) == 0u) { }
-    txDisable();
-    goToMuteMode();
+    RS485_txDisable();
+    RS485_goToMuteMode();
 }
 
-static void processCommand(void)
+static void RS485_processCommand(void)
 {
     if (strcmp((const char *)&rx_buffer[1u], "PING") == 0)
     {
-        usartSendString("PONG\r\n");
+        RS485_usartSendString("PONG\r\n");
     }
     else if (strcmp((const char *)&rx_buffer[1u], "TEMP") == 0)
     {
-        usartSendString("TEMP=25.4\r\n");
+        RS485_usartSendString("TEMP=25.4\r\n");
     }
     else if (strcmp((const char *)&rx_buffer[1u], "PIR") == 0)
     {
-        usartSendString("PIR=0\r\n");
+        RS485_usartSendString("PIR=0\r\n");
     }
     else if (strcmp((const char *)&rx_buffer[1u], "ALL") == 0)
     {
-        usartSendString("TEMP=25.4,PIR=0,HUM=40,LUX=120\r\n");
+        RS485_usartSendString("TEMP=25.4,PIR=0,HUM=40,LUX=120\r\n");
     }
     else if (strcmp((const char *)&rx_buffer[1u], "LENKA") == 0)
     {
-        usartSendString("Pusztaiova\r\n");
+        RS485_usartSendString("Pusztaiova\r\n");
     }
     else if (strcmp((const char *)&rx_buffer[1u], "PARKSIDE") == 0)
     {
-        usartSendString("POHAR\r\n");
+        RS485_usartSendString("POHAR\r\n");
     }
     else
     {
-        usartSendString("ERR\r\n");
+        RS485_usartSendString("ERR\r\n");
     }
 }
 
@@ -256,7 +211,7 @@ void RS485_usartIrqHandler(void)
         else if ((rx_index == 0u) && (c != node_id))  // first byte is address, must match node_id
         {
             DEBUG_sendString("Invalid node ID\r\n", 0);
-            goToMuteMode();
+            RS485_goToMuteMode();
             return;
         }
         else if ((rx_index < (RX_BUFFER_SIZE - 1u)) && (c != '\r'))
@@ -270,7 +225,7 @@ void RS485_usartIrqHandler(void)
         DEBUG_sendString("USART error\r\n", 0);
         (void)usart->SR; // clear error flags
         (void)usart->DR;
-        goToMuteMode();
+        RS485_goToMuteMode();
         return;
     }
 }
