@@ -3,16 +3,16 @@
 #include "button.h"
 #include "debug.h"
 
-static void initLedPin(void);
-static void btn0_single(void);
-static void btn0_double(void);
-static void btn0_triple(void);
-static void btn0_long(void);
+static void APP_initLedPin(void);
+static void APP_btn0Single(void);
+static void APP_btn0Double(void);
+static void APP_btn0Triple(void);
+static void APP_btn0Long(void);
 
 static const btn_t buttonInit[] = {
-    BUTTON_DEF(GPIOB, 12u, btn0_single, btn0_double, btn0_triple, btn0_long  ),  // Tlacidlo 0 – PB12
-    BUTTON_DEF(GPIOC, 15u, btn0_long  , btn0_triple, btn0_double, btn0_single),  // Tlacidlo 1 – PC15
-    BUTTON_DEF(GPIOA,  1u,     0u     , btn0_double, btn0_triple,     0u     )   // Tlacidlo 2 – PA1
+    BUTTON_DEF(GPIOB, 12u, APP_btn0Single, APP_btn0Double, APP_btn0Triple, APP_btn0Long  ),  // Tlacidlo 0 – PB12
+    BUTTON_DEF(GPIOC, 15u, APP_btn0Long  , APP_btn0Triple, APP_btn0Double, APP_btn0Single),  // Tlacidlo 1 – PC15
+    BUTTON_DEF(GPIOA,  1u,      0u       , APP_btn0Double, APP_btn0Triple,      0u       )   // Tlacidlo 2 – PA1
 };
 #define BUTTON_COUNT ((uint32_t)(sizeof(buttonInit) / sizeof(buttonInit[0])))
 
@@ -21,7 +21,7 @@ int main(void) {
     SystemCoreClockUpdate();
 
     DEBUG_initTrace(SystemCoreClock);
-    initLedPin();
+    APP_initLedPin();
     BUTTON_init(buttonInit, BUTTON_COUNT);
     SysTick_Config(SystemCoreClock / 1000);
 
@@ -37,28 +37,28 @@ int main(void) {
 }
 
 
-static void btn0_single(void) {
+static void APP_btn0Single(void) {
     DEBUG_sendChar('S', 0);
     DEBUG_ledPinToggle();
     GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR13) ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
 }
-static void btn0_double(void) {
+static void APP_btn0Double(void) {
     DEBUG_sendChar('D', 0);
     // DEBUG_ledPinToggle();
     GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR14) ? GPIO_BSRR_BR14 : GPIO_BSRR_BS14;
 }
-static void btn0_triple(void) {
+static void APP_btn0Triple(void) {
     DEBUG_sendChar('T', 0);
     // DEBUG_ledPinToggle();
     GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR15) ? GPIO_BSRR_BR15 : GPIO_BSRR_BS15;
 }
-static void btn0_long(void) {
+static void APP_btn0Long(void) {
     DEBUG_sendChar('L', 0);
     // DEBUG_ledPinToggle();
     GPIOA->BSRR = (GPIOA->ODR & GPIO_ODR_ODR8) ? GPIO_BSRR_BR8 : GPIO_BSRR_BS8;
 }
 
-static void initLedPin(void) {
+static void APP_initLedPin(void) {
     uint32_t reg;
     RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
     reg = GPIOC->CRH;
