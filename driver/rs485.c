@@ -8,6 +8,8 @@
 #include "debug.h"
 #include "gpio.h"
 
+// #define RS485_PARITY_ENABLE 1
+
 #define FLASH_ID_ADDRESS  (0x0800FC00u)
 #define DEFAULT_NODE_ID   '1'//(0xF1u)
 #define DELAY_RESPONSE_MS (3u)
@@ -20,7 +22,9 @@ static void RS485_txEnable(void);
 static void RS485_txDisable(void);
 static uint32_t RS485_getUsartClockHz(void);
 static void RS485_usartInit(void);
+static bool RS485_isMuteMode(void);
 static void RS485_goToMuteMode(void);
+static void RS485_goToActiveMode(void);
 static void RS485_usartSendChar(char c);
 static void RS485_usartSendString(const char *s);
 static void RS485_processCommand(void);
@@ -68,11 +72,28 @@ static void RS485_initGlobalVariables(void)
     command_pending = false;
 }
 
+static bool RS485_isMuteMode(void)
+{
+    return (usart->CR1 & USART_CR1_WAKE) != 0u;
+}
+
 static void RS485_goToMuteMode(void)
 {
     DEBUG_sendString("Entering mute mode\r\n", 0);
     usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
     usart->CR1 = (usart->CR1 & ~USART_CR1_M) | USART_CR1_RWU | USART_CR1_WAKE; // back to mute
+    usart->CR1 |= USART_CR1_UE;
+}
+
+static void RS485_goToActiveMode(void)
+{
+    // DEBUG_sendString("Entering active mode\r\n", 0);
+    usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
+  #if RS485_PARITY_ENABLE
+    usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU)) | USART_CR1_M;                 // back to active with 9-bit (parity) mode
+  #else
+    usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU));                               // back to active
+  #endif
     usart->CR1 |= USART_CR1_UE;
 }
 
@@ -144,7 +165,9 @@ static void RS485_usartInit(void)
         return; /* ochrana pred delenim nulou */
     }
     usart->CR1 =
+      #if RS485_PARITY_ENABLE
         USART_CR1_PCE |  // Parity control enable, parity selection is EVEN by default
+      #endif
         USART_CR1_RE |
         USART_CR1_TE |
         USART_CR1_WAKE | // Wake on address
@@ -220,12 +243,10 @@ static void RS485_processCommand(void)
 void RS485_usartIrqHandler(void)
 {
     // DEBUG_sendString("IRQ-UART\r\n", 0);
-    if ((usart->CR1 & USART_CR1_WAKE) != 0u)
+    if(RS485_isMuteMode())
     {
         DEBUG_sendString("W", 0);
-        usart->CR1 &= ~USART_CR1_UE;
-        usart->CR1 = (usart->CR1 & ~USART_CR1_WAKE) | USART_CR1_M;
-        usart->CR1 |= USART_CR1_UE;
+        RS485_goToActiveMode();
         (void)usart->DR;  // read DR to clear
         return;
     }
