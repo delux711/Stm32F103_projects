@@ -35,7 +35,7 @@ void OnProjectLoad (void) {
   //
   // User settings
   //
-  File.Open ("C:/Users/P/Documents/Keil_projects/Stm32F103_projects/KEIL_objects/RS485.axf");
+  File.Open ("$(ProjectDir)/../../KEIL_objects/RS485.axf");
 }
 
 /*********************************************************************
