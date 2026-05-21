@@ -1,8 +1,8 @@
 
 
-Breakpoint=C:/Users/P/Documents/Keil_projects/Stm32F103_projects/driver/rs485.c:232:9, State=BP_STATE_DISABLED
-OpenDocument="rs485.c", FilePath="C:/Users/P/Documents/Keil_projects/Stm32F103_projects/driver/rs485.c", Line=222
-OpenDocument="main.c", FilePath="C:/Users/P/Documents/Keil_projects/Stm32F103_projects/apps/test_RS485/main.c", Line=0
+Breakpoint=$(ProjectDir)/../../driver/rs485.c:232:9, State=BP_STATE_DISABLED
+OpenDocument="rs485.c", FilePath="$(ProjectDir)/../../driver/rs485.c", Line=222
+OpenDocument="main.c", FilePath="$(ProjectDir)/main.c", Line=0
 OpenToolbar="Debug", Floating=0, x=0, y=0
 OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=0, w=381, h=205, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=2, w=381, h=226, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
