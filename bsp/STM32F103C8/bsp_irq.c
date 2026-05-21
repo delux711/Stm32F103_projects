@@ -79,7 +79,9 @@ static void BSP_sysTickHandler(void)
 
 static void BSP_usart1IrqHandler(void)
 {
+  #ifdef DRIVER_RS485_USE
     RS485_usartIrqHandler();
+  #endif
 }
 
 void EXTI0_IRQHandler(void) {
