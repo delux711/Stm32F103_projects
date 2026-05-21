@@ -8,7 +8,7 @@
 #include "debug.h"
 #include "gpio.h"
 
-#define FLASH_ID_ADDRESS  (0x0801FC00u)
+#define FLASH_ID_ADDRESS  (0x0800FC00u)
 #define DEFAULT_NODE_ID   '1'//(0xF1u)
 #define DELAY_RESPONSE_MS (3u)
 #define RX_BUFFER_SIZE    (64u)
@@ -18,6 +18,7 @@ static void RS485_initGlobalVariables(void);
 static void RS485_gpioInit(const RS485_config_t *config);
 static void RS485_txEnable(void);
 static void RS485_txDisable(void);
+static uint32_t RS485_getUsartClockHz(void);
 static void RS485_usartInit(void);
 static void RS485_goToMuteMode(void);
 static void RS485_usartSendChar(char c);
@@ -113,16 +114,43 @@ static void RS485_txDisable(void)
     rs485_config.dirPort->BRR = (uint32_t)1u << rs485_config.dirPin;
 }
 
+static uint32_t RS485_getUsartClockHz(void)
+{
+    uint32_t ppre_bits;
+    uint32_t div = 1u;
+
+    /* urcenie, ci je USART na APB2 alebo APB1 */
+    if (rs485_config.usartRccReg == &RCC->APB2ENR)
+        ppre_bits = (RCC->CFGR >> 11) & 0x7u; /* PPRE2 */
+    else
+        ppre_bits = (RCC->CFGR >> 8) & 0x7u;  /* PPRE1 */
+
+    /* 0xx: /1, 100:/2, 101:/4, 110:/8, 111:/16 */
+    if (ppre_bits >= 4u)
+    {
+        div = 1u << (ppre_bits - 3u);
+    }
+
+    return SystemCoreClock / div;
+}
+
 static void RS485_usartInit(void)
 {
+    uint32_t usart_clk = RS485_getUsartClockHz();
+
     *rs485_config.usartRccReg |= rs485_config.usartRccBit;
-    usart->BRR = SystemCoreClock / rs485_config.baudrate;
+    if (rs485_config.baudrate == 0u)
+    {
+        return; /* ochrana pred delenim nulou */
+    }
     usart->CR1 =
         USART_CR1_PCE |  // Parity control enable, parity selection is EVEN by default
         USART_CR1_RE |
         USART_CR1_TE |
         USART_CR1_WAKE | // Wake on address
         USART_CR1_RXNEIE;
+    /* BRR pre oversampling x16: BRR ~= fCK / baud, so zaokruhlenim */
+    usart->BRR = (usart_clk + (rs485_config.baudrate / 2u)) / rs485_config.baudrate;
     usart->CR2 = (node_id & USART_CR2_ADD);
     usart->CR1 |= USART_CR1_RWU; // start in mute mode
     usart->CR1 |= USART_CR1_UE;
@@ -217,6 +245,12 @@ void RS485_usartIrqHandler(void)
 
         if (c == '\n')
         {
+            if(rx_index == 0u)
+            {
+                DEBUG_sendString("Empty command\r\n", 0);
+                RS485_goToMuteMode();
+                return; // ignore empty lines
+            }
             DEBUG_sendString("Command received\r\n", 0);
             rx_buffer[rx_index] = 0u;
             command_due_tick = SYS_getMs() + DELAY_RESPONSE_MS;
