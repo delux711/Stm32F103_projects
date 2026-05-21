@@ -5,8 +5,18 @@
 
 void DEBUG_initTrace(uint32_t cpu_freq_hz);
 
+static inline void DEBUG_sendCharInternal(uint8_t ch, uint8_t channel)
+{
+    ITM->PORT[channel].u8 = ch;
+}
+
 static inline void DEBUG_sendChar(uint8_t ch, uint8_t channel)
 {
+    if (str == 0) return;
+    if ((CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) == 0u) return;
+    if ((ITM->TCR & ITM_TCR_ITMENA_Msk) == 0u) return;
+    if ((ITM->TER & (1UL << channel)) == 0u) return;
+
     ITM->PORT[channel].u8 = ch;
 }
 
@@ -18,7 +28,7 @@ static inline void DEBUG_sendString(const char *str, uint8_t channel)
     if ((ITM->TER & (1UL << channel)) == 0u) return;
 
     while (*str != '\0') {
-        DEBUG_sendChar((uint8_t)*str, channel);
+        DEBUG_sendCharInternal((uint8_t)*str, channel);
         str++;
     }
 }
