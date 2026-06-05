@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>../../apps/test_button;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core</IncludePath>
+              <IncludePath>../../apps/test_button;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core;../../cmsis/RTT/RTT;../../cmsis/RTT/Config</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -417,6 +417,26 @@
               <FileName>systick.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\driver\systick.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>RTT</GroupName>
+          <Files>
+            <File>
+              <FileName>SEGGER_RTT.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\cmsis\RTT\RTT\SEGGER_RTT.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_RTT_printf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\cmsis\RTT\RTT\SEGGER_RTT_printf.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_RTT_Syscalls_KEIL.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\cmsis\RTT\Syscalls\SEGGER_RTT_Syscalls_KEIL.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -755,7 +775,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_MD, VECT_TAB_SRAM</Define>
               <Undefine></Undefine>
-              <IncludePath>../../apps/test_button;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core</IncludePath>
+              <IncludePath>../../apps/test_button;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core;../../cmsis/RTT/RTT;../../cmsis/RTT/Config</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -833,6 +853,26 @@
               <FileName>systick.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\driver\systick.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>RTT</GroupName>
+          <Files>
+            <File>
+              <FileName>SEGGER_RTT.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\cmsis\RTT\RTT\SEGGER_RTT.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_RTT_printf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\cmsis\RTT\RTT\SEGGER_RTT_printf.c</FilePath>
+            </File>
+            <File>
+              <FileName>SEGGER_RTT_Syscalls_KEIL.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\cmsis\RTT\Syscalls\SEGGER_RTT_Syscalls_KEIL.c</FilePath>
             </File>
           </Files>
         </Group>
