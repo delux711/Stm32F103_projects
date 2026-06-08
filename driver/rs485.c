@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h> // for snprintf
 
 #include "stm32f10x.h"
 #include "SEGGER_RTT.h"
@@ -44,14 +45,28 @@ static uint32_t rs485_command_count = 0u;
 
 static void RS485_logString(const char *msg)
 {
-    DEBUG_sendString(msg, 0);
+    // DEBUG_sendString(msg, 0);
     (void)SEGGER_RTT_WriteString(0u, msg);
 }
 
 static void RS485_logChar(char c)
 {
-    DEBUG_sendChar((uint8_t)c, 0u);
+    // DEBUG_sendChar((uint8_t)c, 0u);
     (void)SEGGER_RTT_Write(0u, &c, 1u);
+}
+
+static void RS485_logHex(uint32_t value)
+{
+    char buffer[11u]; // "0x" + 8 hex digits + null terminator
+    snprintf(buffer, sizeof(buffer), "0x%08X", value);
+    RS485_logString(buffer);
+}
+
+static void RS485_logDec(uint32_t value)
+{
+    char buffer[12u]; // max 10 digits for 32-bit + null terminator
+    snprintf(buffer, sizeof(buffer), "%u", value);
+    RS485_logString(buffer);
 }
 
 void RS485_init(const RS485_config_t *config)
@@ -105,21 +120,19 @@ static bool RS485_isMuteMode(void)
 static void RS485_goToMuteMode(void)
 {
     RS485_logString("Entering mute mode\r\n");
-    usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
-    usart->CR1 = (usart->CR1 & ~USART_CR1_M) | USART_CR1_RWU | USART_CR1_WAKE; // back to mute
-    usart->CR1 |= USART_CR1_UE;
+    usart->CR1 |= USART_CR1_RWU; // go to mute
 }
 
 static void RS485_goToActiveMode(void)
 {
-        RS485_logString("Entering active mode\r\n");
-    usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
-  #if RS485_PARITY_ENABLE
-    usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU)) | USART_CR1_M;                 // back to active with 9-bit (parity) mode
-  #else
-    usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU));                               // back to active
-  #endif
-    usart->CR1 |= USART_CR1_UE;
+    RS485_logString("Entering active mode\r\n");
+//     usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
+//   #if RS485_PARITY_ENABLE
+//     usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU)) | USART_CR1_M;                 // back to active with 9-bit (parity) mode
+//   #else
+//     usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU));                               // back to active
+//   #endif
+//     usart->CR1 |= USART_CR1_UE;
 }
 
 static uint8_t RS485_readNodeId(void)
@@ -195,12 +208,10 @@ static void RS485_usartInit(void)
       #endif
         USART_CR1_RE |
         USART_CR1_TE |
-        USART_CR1_WAKE | // Wake on address
+        // USART_CR1_WAKE | // Wake (0) on idle line
         USART_CR1_RXNEIE;
     /* BRR pre oversampling x16: BRR ~= fCK / baud, so zaokruhlenim */
     usart->BRR = (usart_clk + (rs485_config.baudrate / 2u)) / rs485_config.baudrate;
-    usart->CR2 = (node_id & USART_CR2_ADD);
-    usart->CR1 |= USART_CR1_RWU; // start in mute mode
     usart->CR1 |= USART_CR1_UE;
 
     NVIC_EnableIRQ(rs485_config.usartIrqn);
@@ -280,61 +291,148 @@ static void RS485_processCommand(void)
     RS485_usartSendString("ERR\r\n");
 }
 
+enum RS485_IRQ_t {
+    RS485_IRQ_INIT = 0,
+    RS485_IRQ_WAIT_FOR_ADDRESS,
+    RS485_IRQ_LENGTH,
+    RS485_IRQ_DATA,
+    RS485_IRQ_CRC,
+    RS485_IRQ_IDLE,
+    RS485_IRQ_MUTE
+};
+
+static volatile enum RS485_IRQ_t irq_state = RS485_IRQ_WAIT_FOR_ADDRESS; // todo - pridat inicializaciu medzi globalne premenne
+
 void RS485_usartIrqHandler(void)
 {
-    // DEBUG_sendString("IRQ-UART\r\n", 0);
-    if(RS485_isMuteMode())
+    uint8_t data;
+    static uint8_t length = 0u;
+
+    RS485_logString("USART IRQ\r\n");
+    if((usart->SR & USART_SR_RXNE) != 0u)
     {
-        RS485_logChar('W');
-        RS485_goToActiveMode();
-        (void)usart->DR;  // read DR to clear
-        return;
-    }
-
-    if ((usart->SR & USART_SR_RXNE) != 0u)
-    {
-        uint16_t data = usart->DR;
-        uint8_t c = (uint8_t)(data & 0xFFu);
-        // DEBUG_sendString("R-ch:", 0);
-        // DEBUG_sendChar(c, 0);
-        // DEBUG_sendString("\r\n", 0);
-
-        if (command_pending)
+        data = (uint8_t)(usart->DR & 0xFFu);
+        RS485_logString("IRQ: RXNE\r\n");
+        RS485_logChar((char)data);
+        switch(irq_state)
         {
-            return;
-        }
-
-        if (c == '\n')
-        {
-            if(rx_index == 0u)
+            case RS485_IRQ_WAIT_FOR_ADDRESS:
             {
-                RS485_logString("Empty command\r\n");
-                RS485_goToMuteMode();
-                return; // ignore empty lines
+                if(data == node_id)
+                {
+                    irq_state = RS485_IRQ_LENGTH;
+                    RS485_logString("IRQ: address matched: ");
+                    RS485_logHex(data);
+                    RS485_logString("\r\n");
+                }
+                else
+                {
+                    irq_state = RS485_IRQ_MUTE;
+                    RS485_logString("IRQ: address mismatch - mute mode\r\n");
+                    RS485_goToMuteMode();
+                }
+                break;
             }
-            RS485_logString("Command received\r\n");
-            rx_buffer[rx_index] = 0u;
-            command_due_tick = SYS_getMs() + DELAY_RESPONSE_MS;
-            command_pending = true;
-        }
-        else if ((rx_index == 0u) && (c != node_id))  // first byte is address, must match node_id
-        {
-            RS485_logString("Invalid node ID\r\n");
-            RS485_goToMuteMode();
-            return;
-        }
-        else if ((rx_index < (RX_BUFFER_SIZE - 1u)) && (c != '\r'))
-        {
-            rx_buffer[rx_index++] = c;
+            case RS485_IRQ_LENGTH:
+            {
+                irq_state = RS485_IRQ_DATA;
+                length = data;
+                rx_index = 0u;
+                RS485_logString("IRQ: length received: ");
+                RS485_logDec(length);
+                RS485_logString("\r\n");
+                break;
+            }
+            case RS485_IRQ_DATA:
+            {
+                RS485_logString("IRQ: data received: ");
+                RS485_logChar((char)data);
+                if(rx_index < RX_BUFFER_SIZE)
+                {
+                    rx_buffer[rx_index++] = data;
+                }
+                else
+                {
+                    RS485_logString("IRQ: data overflow\r\n");
+                    irq_state = RS485_IRQ_WAIT_FOR_ADDRESS; // reset state machine on overflow
+                }
+                length--;
+                if(length == 0u)
+                {
+                    irq_state = RS485_IRQ_CRC;
+                    RS485_logString("IRQ: all data received, wait for CRC\r\n");
+                }
+                break;
+            }
+            case RS485_IRQ_CRC:
+            {
+                RS485_logString("IRQ: CRC received: ");
+                RS485_logHex(data);
+                RS485_logString("\r\n");
+                irq_state = RS485_IRQ_WAIT_FOR_ADDRESS; // for simplicity, we just go back to waiting for address after receiving CRC
+                break;
+            }
+            default:
+            {
+                irq_state = RS485_IRQ_WAIT_FOR_ADDRESS;
+                RS485_logString("IRQ: unexpected state\r\n");
+                RS485_goToActiveMode();
+                break;
+            }
         }
     }
+    // if(RS485_isMuteMode())
+    // {
+    //     RS485_logChar('W');
+    //     RS485_goToActiveMode();
+    //     (void)usart->DR;  // read DR to clear
+    //     return;
+    // }
 
-    if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) != 0u)
-    {
-        RS485_logString("USART error\r\n");
-        (void)usart->SR; // clear error flags
-        (void)usart->DR;
-        RS485_goToMuteMode();
-        return;
-    }
+    // if ((usart->SR & USART_SR_RXNE) != 0u)
+    // {
+    //     uint16_t data = usart->DR;
+    //     uint8_t c = (uint8_t)(data & 0xFFu);
+    //     // DEBUG_sendString("R-ch:", 0);
+    //     // DEBUG_sendChar(c, 0);
+    //     // DEBUG_sendString("\r\n", 0);
+
+    //     if (command_pending)
+    //     {
+    //         return;
+    //     }
+
+    //     if (c == '\n')
+    //     {
+    //         if(rx_index == 0u)
+    //         {
+    //             RS485_logString("Empty command\r\n");
+    //             RS485_goToMuteMode();
+    //             return; // ignore empty lines
+    //         }
+    //         RS485_logString("Command received\r\n");
+    //         rx_buffer[rx_index] = 0u;
+    //         command_due_tick = SYS_getMs() + DELAY_RESPONSE_MS;
+    //         command_pending = true;
+    //     }
+    //     else if ((rx_index == 0u) && (c != node_id))  // first byte is address, must match node_id
+    //     {
+    //         RS485_logString("Invalid node ID\r\n");
+    //         RS485_goToMuteMode();
+    //         return;
+    //     }
+    //     else if ((rx_index < (RX_BUFFER_SIZE - 1u)) && (c != '\r'))
+    //     {
+    //         rx_buffer[rx_index++] = c;
+    //     }
+    // }
+
+    // if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) != 0u)
+    // {
+    //     RS485_logString("USART error\r\n");
+    //     (void)usart->SR; // clear error flags
+    //     (void)usart->DR;
+    //     RS485_goToMuteMode();
+    //     return;
+    // }
 }
