@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "stm32f10x.h"
+#include "SEGGER_RTT.h"
 #include "systick.h"
 #include "debug.h"
 #include "gpio.h"
@@ -28,6 +29,8 @@ static void RS485_goToActiveMode(void);
 static void RS485_usartSendChar(char c);
 static void RS485_usartSendString(const char *s);
 static void RS485_processCommand(void);
+static void RS485_logString(const char *msg);
+static void RS485_logChar(char c);
 
 static RS485_config_t rs485_config;
 static USART_TypeDef *usart;
@@ -39,6 +42,18 @@ static volatile bool command_pending = false;
 static const RS485_command_t *rs485_command_table = 0;
 static uint32_t rs485_command_count = 0u;
 
+static void RS485_logString(const char *msg)
+{
+    DEBUG_sendString(msg, 0);
+    (void)SEGGER_RTT_WriteString(0u, msg);
+}
+
+static void RS485_logChar(char c)
+{
+    DEBUG_sendChar((uint8_t)c, 0u);
+    (void)SEGGER_RTT_Write(0u, &c, 1u);
+}
+
 void RS485_init(const RS485_config_t *config)
 {
     rs485_config = *config;
@@ -46,12 +61,21 @@ void RS485_init(const RS485_config_t *config)
     RS485_initGlobalVariables();
     RS485_gpioInit(&rs485_config);
     RS485_usartInit();
+    RS485_logString("RS485 init done\r\n");
 }
 
 void RS485_setCommandTable(const RS485_command_t *command_table, uint32_t command_count)
 {
     rs485_command_table = command_table;
     rs485_command_count = command_count;
+    if ((command_table == 0) || (command_count == 0u))
+    {
+        RS485_logString("Command table empty\r\n");
+    }
+    else
+    {
+        RS485_logString("Command table set\r\n");
+    }
 }
 
 void RS485_process(void)
@@ -70,6 +94,7 @@ static void RS485_initGlobalVariables(void)
     rx_index = 0u;
     command_due_tick = 0u;
     command_pending = false;
+    RS485_logString("RS485 globals init\r\n");
 }
 
 static bool RS485_isMuteMode(void)
@@ -79,7 +104,7 @@ static bool RS485_isMuteMode(void)
 
 static void RS485_goToMuteMode(void)
 {
-    DEBUG_sendString("Entering mute mode\r\n", 0);
+    RS485_logString("Entering mute mode\r\n");
     usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
     usart->CR1 = (usart->CR1 & ~USART_CR1_M) | USART_CR1_RWU | USART_CR1_WAKE; // back to mute
     usart->CR1 |= USART_CR1_UE;
@@ -87,7 +112,7 @@ static void RS485_goToMuteMode(void)
 
 static void RS485_goToActiveMode(void)
 {
-    // DEBUG_sendString("Entering active mode\r\n", 0);
+        RS485_logString("Entering active mode\r\n");
     usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
   #if RS485_PARITY_ENABLE
     usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU)) | USART_CR1_M;                 // back to active with 9-bit (parity) mode
@@ -189,6 +214,13 @@ static void RS485_usartSendChar(char c)
 
 static void RS485_usartSendString(const char *s)
 {
+    if (s == 0)
+    {
+        RS485_logString("TX null response\r\n");
+        return;
+    }
+
+    RS485_logString("TX response start\r\n");
     RS485_txEnable();
 
     while (*s != '\0')
@@ -199,6 +231,7 @@ static void RS485_usartSendString(const char *s)
 
     while ((usart->SR & USART_SR_TC) == 0u) { }
     RS485_txDisable();
+    RS485_logString("TX response done\r\n");
     RS485_goToMuteMode();
 }
 
@@ -206,8 +239,11 @@ static void RS485_processCommand(void)
 {
     const char *command = (const char *)&rx_buffer[1u];
 
+    RS485_logString("Process command\r\n");
+
     if ((rs485_command_table == 0) || (rs485_command_count == 0u))
     {
+        RS485_logString("No command table\r\n");
         RS485_usartSendString("ERR\r\n");
         return;
     }
@@ -223,20 +259,24 @@ static void RS485_processCommand(void)
 
         if (strcmp(command, entry->command) == 0)
         {
+            RS485_logString("Command match\r\n");
             const char *response = entry->callback();
 
             if (response != 0)
             {
+                RS485_logString("Command callback ok\r\n");
                 RS485_usartSendString(response);
             }
             else
             {
+                RS485_logString("Command callback null\r\n");
                 RS485_usartSendString("ERR\r\n");
             }
             return;
         }
     }
 
+    RS485_logString("Unknown command\r\n");
     RS485_usartSendString("ERR\r\n");
 }
 
@@ -245,7 +285,7 @@ void RS485_usartIrqHandler(void)
     // DEBUG_sendString("IRQ-UART\r\n", 0);
     if(RS485_isMuteMode())
     {
-        DEBUG_sendString("W", 0);
+        RS485_logChar('W');
         RS485_goToActiveMode();
         (void)usart->DR;  // read DR to clear
         return;
@@ -268,18 +308,18 @@ void RS485_usartIrqHandler(void)
         {
             if(rx_index == 0u)
             {
-                DEBUG_sendString("Empty command\r\n", 0);
+                RS485_logString("Empty command\r\n");
                 RS485_goToMuteMode();
                 return; // ignore empty lines
             }
-            DEBUG_sendString("Command received\r\n", 0);
+            RS485_logString("Command received\r\n");
             rx_buffer[rx_index] = 0u;
             command_due_tick = SYS_getMs() + DELAY_RESPONSE_MS;
             command_pending = true;
         }
         else if ((rx_index == 0u) && (c != node_id))  // first byte is address, must match node_id
         {
-            DEBUG_sendString("Invalid node ID\r\n", 0);
+            RS485_logString("Invalid node ID\r\n");
             RS485_goToMuteMode();
             return;
         }
@@ -291,7 +331,7 @@ void RS485_usartIrqHandler(void)
 
     if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) != 0u)
     {
-        DEBUG_sendString("USART error\r\n", 0);
+        RS485_logString("USART error\r\n");
         (void)usart->SR; // clear error flags
         (void)usart->DR;
         RS485_goToMuteMode();
