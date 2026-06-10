@@ -4,7 +4,9 @@ import time
 # Konfigurácia sériového portu (zmeňte baudrate podľa potreby vášho zariadenia)
 SERIAL_PORT = 'COM3'
 BAUDRATE = 9600
-DATA_TO_SEND = b"DATA" # 'b' definuje, že posielame čisté bajty (bytes)
+# DATA_TO_SEND = b"DATA" # 'b' definuje, že posielame čisté bajty (bytes)
+# DATA_TO_SEND = b"DATADATADATADATADATADATADATADATADATADATADATADATA14PINGxDATADATADATADATADATAR"
+DATA_TO_SEND = b"DATADATADATADATADATADATADATADATADATADATADATADATA14PINGx"
 
 try:
     # Otvorenie COM3 portu
@@ -13,17 +15,22 @@ try:
 
     # Zaznamenanie štartovacieho času
     start_time = time.time()
-    duration = 5 # Doba vysielania v sekundách
+    duration = 1 # Doba vysielania v sekundách
     count = 0
 
-    # Slučka beží presne 5 sekúnd bez akéhokoľvek delay / sleep
-    ser.write(b"1") # posielame první balík dat hned na začátku
+#*********************************************************************************
+    ser.write(b"2") # posielame první balík dat hned na začátku
+    # Slučka beží presne 1 sekundu bez akéhokoľvek delay / sleep
     while (time.time() - start_time) < duration:
         ser.write(DATA_TO_SEND)
         count += 1
-
-    print(f"Vysielanie ukončené. Dáta sa posielali celých 5 sekúnd.")
+    print(f"Vysielanie ukončené. Dáta sa posielali celých 1 sekundu.")
     print(f"Počet odoslaných balíkov dát: {count}")
+
+#*********************************************************************************
+    time.sleep(0.2)  # 200 ms delay pred ďalším zápisom
+    ser.write(b"1") # adresovany node
+    ser.write(b"4PINGx")
 
 except serial.SerialException as e:
     print(f"Chyba: Nepodarilo sa otvoriť alebo zapisovať na {SERIAL_PORT}. Skontrolujte, či port nepoužíva iný program.")
