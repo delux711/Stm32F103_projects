@@ -1,4 +1,5 @@
 #include "debug.h"
+#include "SEGGER_RTT.h"
 
 // __STATIC_INLINE uint32_t ITM_SendChar (uint32_t ch)
 // {
@@ -11,12 +12,12 @@
 //   return (ch);
 // }
 
-static inline int debuggerActive(void)
+static inline int DEBUG_debuggerActive(void)
 {
     return (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) != 0;
 }
 
-static void initSWO(void)
+static void DEBUG_initSwo(void)
 {
     /* Enable clocks */
     RCC->APB2ENR |= RCC_APB2ENR_IOPBEN;   // GPIOB clock
@@ -49,9 +50,9 @@ void DEBUG_initTrace(uint32_t cpu_freq_hz)
     DEBUG_ledPinOff();
     GPIOC->CRH = reg;
 
-    if(debuggerActive())
+    if(DEBUG_debuggerActive())
     {
-        initSWO();
+        DEBUG_initSwo();
         /* Enable trace in core debug */
         CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
         DBGMCU->CR |= DBGMCU_CR_TRACE_IOEN;
@@ -88,3 +89,20 @@ void DEBUG_initTrace(uint32_t cpu_freq_hz)
         TPIU->FFCR = 0x100;      // disable formatter
     }
 }
+
+void DEBUG_writeString(const char *s) {
+    (void)SEGGER_RTT_WriteString(0u, s);
+}
+
+void DEBUG_writeChar(char c) {
+    (void)SEGGER_RTT_Write(0u, &c, 1u);
+}
+
+// int DEBUG_printf(const char *fmt, ...) {
+//     int r;
+//     va_list args;
+//     va_start(args, fmt);
+//     r = SEGGER_RTT_vprintf(0u, fmt, &args);
+//     va_end(args);
+//     return r;
+// }

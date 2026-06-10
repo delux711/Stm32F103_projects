@@ -1,10 +1,13 @@
 #include "app_config.h"
 
 #ifdef DRIVER_BUTTON_USE
-#include "button.h"
+  #include "button.h"
 #endif
 #ifdef DRIVER_SYSTICK_USE
-#include "systick.h"
+  #include "systick.h"
+#endif
+#ifdef DRIVER_RS485_USE
+  #include "rs485.h"
 #endif
 
 void EXTI0_IRQHandler(void) {
@@ -44,12 +47,19 @@ void EXTI15_10_IRQHandler(void)
   #endif
 }
 
-#ifdef DRIVER_SYSTICK_USE
 void SysTick_Handler(void)
 {
-    SYS_incrementMs();
+  #ifdef DRIVER_SYSTICK_USE
+  SYS_incrementMs();
+  #endif
   #ifdef DRIVER_BUTTON_USE
     BUTTON_process(); // spracovanie aktivnych tlacidiel
   #endif
 }
-#endif
+
+void USART1_IRQHandler(void)
+{
+  #ifdef DRIVER_RS485_USE
+    RS485_usartIrqHandler();
+  #endif
+}

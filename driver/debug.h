@@ -3,15 +3,37 @@
 #include "stm32f10x.h"
 #include <stdbool.h>
 
-
 void DEBUG_initTrace(uint32_t cpu_freq_hz);
+
+void DEBUG_writeString(const char *s);
+void DEBUG_writeChar(char c);
+// int  DEBUG_printf(const char *fmt, ...);
+
+static inline void DEBUG_sendCharInternal(uint8_t ch, uint8_t channel)
+{
+    ITM->PORT[channel].u8 = ch;
+}
 
 static inline void DEBUG_sendChar(uint8_t ch, uint8_t channel)
 {
     if ((CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) == 0u) return;
     if ((ITM->TCR & ITM_TCR_ITMENA_Msk) == 0u) return;
     if ((ITM->TER & (1UL << channel)) == 0u) return;
+
     ITM->PORT[channel].u8 = ch;
+}
+
+static inline void DEBUG_sendString(const char *str, uint8_t channel)
+{
+    if (str == 0) return;
+    if ((CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) == 0u) return;
+    if ((ITM->TCR & ITM_TCR_ITMENA_Msk) == 0u) return;
+    if ((ITM->TER & (1UL << channel)) == 0u) return;
+
+    while (*str != '\0') {
+        DEBUG_sendCharInternal((uint8_t)*str, channel);
+        str++;
+    }
 }
 
 static inline void DEBUG_ledPinToggle(void) {

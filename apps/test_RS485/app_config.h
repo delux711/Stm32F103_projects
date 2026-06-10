@@ -1,0 +1,3 @@
+// #define DRIVER_BUTTON_USE
+#define DRIVER_SYSTICK_USE
+#define DRIVER_RS485_USE

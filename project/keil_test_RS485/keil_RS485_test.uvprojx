@@ -48,8 +48,8 @@
             <NotGenerated>0</NotGenerated>
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
-          <OutputDirectory>.\Objects\</OutputDirectory>
-          <OutputName>Stm32_button_Stm32F103C8</OutputName>
+          <OutputDirectory>..\..\KEIL_objects\</OutputDirectory>
+          <OutputName>RS485</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
@@ -339,7 +339,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_MD</Define>
               <Undefine></Undefine>
-              <IncludePath>../../apps/test_button;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core;../../cmsis/RTT/RTT;../../cmsis/RTT/Config</IncludePath>
+              <IncludePath>../../apps/test_RS485;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core;../../cmsis/RTT/RTT;../../cmsis/RTT/Config</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -386,12 +386,12 @@
             <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\apps\test_button\main.c</FilePath>
+              <FilePath>..\..\apps\test_RS485\main.c</FilePath>
             </File>
             <File>
-              <FileName>button.c</FileName>
+              <FileName>rs485.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\driver\button.c</FilePath>
+              <FilePath>..\..\driver\rs485.c</FilePath>
             </File>
             <File>
               <FileName>debug.c</FileName>
@@ -417,6 +417,11 @@
               <FileName>systick.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\driver\systick.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\driver\gpio.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -485,7 +490,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>..\..\KEIL_objects\</OutputDirectory>
-          <OutputName>button</OutputName>
+          <OutputName>RS485</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
@@ -775,7 +780,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_MD, VECT_TAB_SRAM</Define>
               <Undefine></Undefine>
-              <IncludePath>../../apps/test_button;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core;../../cmsis/RTT/RTT;../../cmsis/RTT/Config</IncludePath>
+              <IncludePath>../../apps/test_RS485;../../driver;../../cmsis/device/STM32F103C8;../../cmsis/core;../../cmsis/RTT/RTT;../../cmsis/RTT/Config</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -822,12 +827,12 @@
             <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\apps\test_button\main.c</FilePath>
+              <FilePath>..\..\apps\test_RS485\main.c</FilePath>
             </File>
             <File>
-              <FileName>button.c</FileName>
+              <FileName>rs485.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\driver\button.c</FilePath>
+              <FilePath>..\..\driver\rs485.c</FilePath>
             </File>
             <File>
               <FileName>debug.c</FileName>
@@ -853,6 +858,11 @@
               <FileName>systick.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\driver\systick.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\driver\gpio.c</FilePath>
             </File>
           </Files>
         </Group>

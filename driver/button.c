@@ -10,17 +10,17 @@
 static uint8_t BUTTON_totalCount = 0u;
 static volatile btn_t buttons[10]; // max 10 tlačidiel
 
-static void initExti(void);
-static void initGlobalVars(void);
+static void BUTTON_initExti(void);
+static void BUTTON_initGlobalVars(void);
 
-static inline uint8_t buttonRaw(const volatile btn_t *b)
+static inline uint8_t BUTTON_buttonRaw(const volatile btn_t *b)
 {
     return (b->port->IDR & b->pin_mask) ? 1 : 0;
 }
 
-static void buttonProcess(volatile btn_t *b)
+static void BUTTON_buttonProcess(volatile btn_t *b)
 {
-    uint8_t raw = buttonRaw(b);
+    uint8_t raw = BUTTON_buttonRaw(b);
 
     switch (b->state) {
         case BTN_IDLE:
@@ -74,7 +74,7 @@ static void buttonProcess(volatile btn_t *b)
     }
 }
 
-static void buttonMulticlickProcess(volatile btn_t *b)
+static void BUTTON_buttonMulticlickProcess(volatile btn_t *b)
 {
     if (b->click_count > 0 && b->state == BTN_IDLE) {
         if (b->timer > 0 && --b->timer == 0) {
@@ -92,7 +92,7 @@ static void buttonMulticlickProcess(volatile btn_t *b)
     }
 }
 
-static void initExti(void)
+static void BUTTON_initExti(void)
 {
     // Povoliť AFIO
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
@@ -132,13 +132,13 @@ static void initExti(void)
     }
 }
 
-static void initGlobalVars(void) {
+static void BUTTON_initGlobalVars(void) {
     BUTTON_totalCount = 0u;
 }
 
 void BUTTON_init(const volatile btn_t *button_configs, uint32_t count)
 {
-    initGlobalVars();
+    BUTTON_initGlobalVars();
     BUTTON_totalCount = count;
     memcpy((void *)buttons, (const void *)button_configs, count * sizeof(btn_t));
 
@@ -170,7 +170,7 @@ void BUTTON_init(const volatile btn_t *button_configs, uint32_t count)
         // pull-up
         b->port->BSRR = b->pin_mask;   // nastav high
     }
-    initExti();
+    BUTTON_initExti();
 }
 
 void BUTTON_irqGlobalHandler(void) {
@@ -189,8 +189,8 @@ void BUTTON_irqGlobalHandler(void) {
 void BUTTON_process(void) {
     for (uint32_t i = 0; i < BUTTON_totalCount; i++) {
         if (buttons[i].active) {
-            buttonProcess(&buttons[i]);
-            buttonMulticlickProcess(&buttons[i]);
+            BUTTON_buttonProcess(&buttons[i]);
+            BUTTON_buttonMulticlickProcess(&buttons[i]);
         }
     }
 }
