@@ -3,9 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h> // for snprintf
-
 #include "stm32f10x.h"
-#include "SEGGER_RTT.h"
 #include "systick.h"
 #include "debug.h"
 #include "gpio.h"
@@ -36,7 +34,6 @@ static void RS485_txEnable(void);
 static void RS485_txDisable(void);
 static uint32_t RS485_getUsartClockHz(void);
 static void RS485_usartInit(void);
-static bool RS485_isMuteMode(void);
 static void RS485_goToMuteMode(void);
 static void RS485_goToActiveMode(void);
 static void RS485_usartSendChar(char c);
@@ -61,14 +58,12 @@ static volatile uint32_t RS485_irqCounter = 0u;
 
 static void RS485_logString(const char *msg)
 {
-    // DEBUG_sendString(msg, 0);
-    (void)SEGGER_RTT_WriteString(0u, msg);
+    DEBUG_writeString(msg);
 }
 
 static void RS485_logChar(char c)
 {
-    // DEBUG_sendChar((uint8_t)c, 0u);
-    (void)SEGGER_RTT_Write(0u, &c, 1u);
+    DEBUG_writeChar(c);
 }
 
 static void RS485_logHex(uint32_t value)
@@ -132,11 +127,6 @@ static void RS485_initGlobalVariables(void)
     RS485_logString("RS485 globals init\r\n");
 }
 
-static bool RS485_isMuteMode(void)
-{
-    return (usart->CR1 & USART_CR1_WAKE) != 0u;
-}
-
 static void RS485_goToMuteMode(void)
 {
     RS485_logString("Entering mute mode\r\n");
@@ -146,13 +136,7 @@ static void RS485_goToMuteMode(void)
 static void RS485_goToActiveMode(void)
 {
     RS485_logString("Entering active mode\r\n");
-//     usart->CR1 &= ~USART_CR1_UE;                                               // disable USART to change mode
-//   #if RS485_PARITY_ENABLE
-//     usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU)) | USART_CR1_M;                 // back to active with 9-bit (parity) mode
-//   #else
-//     usart->CR1 = (usart->CR1 & ~(USART_CR1_WAKE | USART_CR1_RWU));                               // back to active
-//   #endif
-//     usart->CR1 |= USART_CR1_UE;
+    usart->CR1 &= ~USART_CR1_RWU; // leave mute mode
 }
 
 static uint8_t RS485_readNodeId(void)
@@ -410,7 +394,7 @@ void RS485_usartIrqHandler(void)
         RS485_logString("USART error\r\n");
         (void)usart->SR; // clear error flags
         (void)usart->DR;
-        RS485_goToMuteMode();
+        RS485_goToActiveMode();
       #ifndef RS485_COMMAND_LINE_ENABLE
         rx_index = 0u;
         RS485_irqState = RS485_IRQ_WAIT_FOR_ADDRESS;

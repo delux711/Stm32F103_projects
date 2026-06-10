@@ -3,7 +3,6 @@
 #include "system_stm32f10x.h"
 #include "rs485.h"
 #include "debug.h"
-#include "SEGGER_RTT.h"
 
 static const char *APP_commandPing(void);
 static const char *APP_commandTemp(void);
@@ -48,7 +47,7 @@ int main(void)
     RS485_init(&rs485_config);
     RS485_setCommandTable(app_command_table, APP_COMMAND_COUNT);
     DEBUG_sendString("RS485 test\r\n", 0);
-    SEGGER_RTT_WriteString(0, "SEGGER Real-Time-Terminal Sample\r\n");
+    DEBUG_writeString("SEGGER Real-Time-Terminal Sample\r\n");
 
     while (1)
     {

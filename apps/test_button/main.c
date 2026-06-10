@@ -2,7 +2,6 @@
 #include "system_stm32f10x.h"
 #include "button.h"
 #include "debug.h"
-#include "SEGGER_RTT.h"
 
 static void APP_initLedPin(void);
 static void APP_btn0Single(void);
@@ -40,25 +39,25 @@ int main(void) {
 
 static void APP_btn0Single(void) {
     DEBUG_sendChar('S', 0);
-    SEGGER_RTT_printf(0, "Single click\r\n");
+    DEBUG_writeString("Single click\r\n");
     DEBUG_ledPinToggle();
     GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR13) ? GPIO_BSRR_BR13 : GPIO_BSRR_BS13;
 }
 static void APP_btn0Double(void) {
     DEBUG_sendChar('D', 0);
-    SEGGER_RTT_printf(0, "Double click\r\n");
+    DEBUG_writeString("Double click\r\n");
     // DEBUG_ledPinToggle();
     GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR14) ? GPIO_BSRR_BR14 : GPIO_BSRR_BS14;
 }
 static void APP_btn0Triple(void) {
     DEBUG_sendChar('T', 0);
-    SEGGER_RTT_printf(0, "Triple click\r\n");
+    DEBUG_writeString("Triple click\r\n");
     // DEBUG_ledPinToggle();
     GPIOB->BSRR = (GPIOB->ODR & GPIO_ODR_ODR15) ? GPIO_BSRR_BR15 : GPIO_BSRR_BS15;
 }
 static void APP_btn0Long(void) {
     DEBUG_sendChar('L', 0);
-    SEGGER_RTT_printf(0, "Long press\r\n");
+    DEBUG_writeString("Long press\r\n");
     // DEBUG_ledPinToggle();
     GPIOA->BSRR = (GPIOA->ODR & GPIO_ODR_ODR8) ? GPIO_BSRR_BR8 : GPIO_BSRR_BS8;
 }
