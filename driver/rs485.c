@@ -11,8 +11,8 @@
 #include "gpio.h"
 
 // #define RS485_PARITY_ENABLE 1
-
 // #define RS485_LOG_IRQ_COUNTER
+#define RS485_COMMAND_LINE_ENABLE
 
 #define FLASH_ID_ADDRESS  (0x0800FC00u)
 #define DEFAULT_NODE_ID   '1'//(0xF1u)
@@ -226,6 +226,9 @@ static void RS485_usartInit(void)
       #if RS485_PARITY_ENABLE
         USART_CR1_PCE |  // Parity control enable, parity selection is EVEN by default
       #endif
+      #ifndef RS485_COMMAND_LINE_ENABLE
+        USART_CR1_IDLEIE |
+      #endif
         USART_CR1_RE |
         USART_CR1_TE |
         // USART_CR1_WAKE | // Wake (0) on idle line
@@ -402,12 +405,16 @@ void RS485_usartIrqHandler(void)
         }
     }
 
-    if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE)) != 0u)
+    if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE | USART_SR_IDLE)) != 0u)
     {
         RS485_logString("USART error\r\n");
         (void)usart->SR; // clear error flags
         (void)usart->DR;
         RS485_goToMuteMode();
+      #ifndef RS485_COMMAND_LINE_ENABLE
+        rx_index = 0u;
+        RS485_irqState = RS485_IRQ_WAIT_FOR_ADDRESS;
+      #endif
         return;
     }
 }
