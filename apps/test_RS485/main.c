@@ -48,7 +48,7 @@ int main(void)
     RS485_init(&rs485_config);
     RS485_setCommandTable(app_command_table, APP_COMMAND_COUNT);
     DEBUG_sendString("RS485 test\r\n", 0);
-	SEGGER_RTT_WriteString(0, "SEGGER Real-Time-Terminal Sample\r\n");
+    SEGGER_RTT_WriteString(0, "SEGGER Real-Time-Terminal Sample\r\n");
 
     while (1)
     {

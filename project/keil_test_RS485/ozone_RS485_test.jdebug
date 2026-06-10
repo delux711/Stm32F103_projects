@@ -35,6 +35,7 @@ void OnProjectLoad (void) {
   //
   // User settings
   //
+  Edit.SysVar (VAR_RTT_ENABLED, 1);
   File.Open ("$(ProjectDir)/../../KEIL_objects/RS485.axf");
 }
 
