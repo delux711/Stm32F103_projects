@@ -31,7 +31,7 @@ void OnProjectLoad (void) {
   Project.SetTargetIF ("SWD");
   Project.SetTIFSpeed ("4 MHz");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M3.svd");
-  Project.AddSvdFile ("c:/Users/P/Documents/Keil_projects/Stm32F103_projects/cmsis/device/STM32F103C8/STM32F103xx.svd");
+  Project.AddSvdFile ("$(ProjectDir)/../../cmsis/device/STM32F103C8/STM32F103xx.svd");
   //
   // User settings
   //
