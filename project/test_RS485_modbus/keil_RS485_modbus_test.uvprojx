@@ -385,11 +385,6 @@
           <GroupName>Source Group 1</GroupName>
           <Files>
             <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\apps\test_RS485\main.c</FilePath>
-            </File>
-            <File>
               <FileName>rs485.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\driver\rs485.c</FilePath>
@@ -425,9 +420,14 @@
               <FilePath>..\..\driver\gpio.c</FilePath>
             </File>
             <File>
-              <FileName>rs485_command.c</FileName>
+              <FileName>modbus_rtu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\driver\rs485_command.c</FilePath>
+              <FilePath>..\..\driver\modbus_rtu.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\apps\test_RS485_modbus\main.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -832,11 +832,6 @@
           <GroupName>Source Group 1</GroupName>
           <Files>
             <File>
-              <FileName>main.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\apps\test_RS485\main.c</FilePath>
-            </File>
-            <File>
               <FileName>rs485.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\driver\rs485.c</FilePath>
@@ -872,9 +867,14 @@
               <FilePath>..\..\driver\gpio.c</FilePath>
             </File>
             <File>
-              <FileName>rs485_command.c</FileName>
+              <FileName>modbus_rtu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\driver\rs485_command.c</FilePath>
+              <FilePath>..\..\driver\modbus_rtu.c</FilePath>
+            </File>
+            <File>
+              <FileName>main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\apps\test_RS485_modbus\main.c</FilePath>
             </File>
           </Files>
         </Group>

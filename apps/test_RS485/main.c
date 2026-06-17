@@ -2,6 +2,7 @@
 #include "stm32f10x.h"
 #include "system_stm32f10x.h"
 #include "rs485.h"
+#include "rs485_command.h"
 #include "debug.h"
 
 static const char *APP_commandPing(void);
@@ -39,19 +40,25 @@ static const RS485_command_t app_command_table[] = {
 
 int main(void)
 {
+    RS485_commandConfig_t command_config = {
+        .node_id = 0u,
+        .response_delay_ms = 3u
+    };
+
     SystemInit();
     SystemCoreClockUpdate();
     SysTick_Config(SystemCoreClock / 1000u);
 
     DEBUG_initTrace(SystemCoreClock);
     RS485_init(&rs485_config);
-    RS485_setCommandTable(app_command_table, APP_COMMAND_COUNT);
+    RS485_commandInit(&command_config);
+    RS485_commandSetTable(app_command_table, APP_COMMAND_COUNT);
     DEBUG_sendString("RS485 test\r\n", 0);
     DEBUG_writeString("SEGGER Real-Time-Terminal Sample\r\n");
 
     while (1)
     {
-        RS485_process();
+        RS485_commandProcess();
         __WFI();
     }
 }

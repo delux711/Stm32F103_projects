@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "stm32f10x.h"
 
+typedef void (*RS485_rxCallback_t)(uint8_t data);
+
 typedef struct
 {
     GPIO_TypeDef *txPort;
@@ -21,17 +23,9 @@ typedef struct
     uint32_t baudrate;
 } RS485_config_t;
 
-typedef const char *(*RS485_commandCallback_t)(void);
-
-typedef struct
-{
-    const char *command;
-    RS485_commandCallback_t callback;
-} RS485_command_t;
-
 void RS485_init(const RS485_config_t *config);
-void RS485_setCommandTable(const RS485_command_t *command_table, uint32_t command_count);
-void RS485_process(void);
+void RS485_setRxCallback(RS485_rxCallback_t rx_callback);
+void RS485_send(const uint8_t *data, uint16_t length);
 void RS485_usartIrqHandler(void);
 
 #endif
