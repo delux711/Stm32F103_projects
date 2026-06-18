@@ -93,15 +93,13 @@ static uint32_t RS485_getUsartClockHz(void)
     uint32_t ppre_bits;
     uint32_t div = 1u;
 
+    /* urcenie, ci je USART na APB2 alebo APB1 */
     if (rs485_config.usartRccReg == &RCC->APB2ENR)
-    {
-        ppre_bits = (RCC->CFGR >> 11) & 0x7u;
-    }
+        ppre_bits = (RCC->CFGR >> 11) & 0x7u; /* PPRE2 */
     else
-    {
-        ppre_bits = (RCC->CFGR >> 8) & 0x7u;
-    }
+        ppre_bits = (RCC->CFGR >> 8) & 0x7u;  /* PPRE1 */
 
+    /* 0xx: /1, 100:/2, 101:/4, 110:/8, 111:/16 */
     if (ppre_bits >= 4u)
     {
         div = 1u << (ppre_bits - 3u);
@@ -122,12 +120,12 @@ static void RS485_usartInit(void)
 
     usart->CR1 =
       #if RS485_PARITY_ENABLE
-        USART_CR1_PCE |
+        USART_CR1_PCE |  // Parity control enable, parity selection is EVEN by default
       #endif
         USART_CR1_RE |
         USART_CR1_TE |
         USART_CR1_RXNEIE;
-
+    /* BRR pre oversampling x16: BRR ~= fCK / baud, so zaokruhlenim */
     usart->BRR = (usart_clk + (rs485_config.baudrate / 2u)) / rs485_config.baudrate;
     usart->CR1 |= USART_CR1_UE;
 

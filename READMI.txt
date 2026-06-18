@@ -25,3 +25,31 @@ stm32f103-project/
 ├── project/
 │   ├── keil_main_app/
 │   ├── keil_test_button/
+
+
+GCC build (arm-none-eabi-gcc)
+=============================
+
+Tento projekt uz vie buildovat bez Keilu cez Makefile v root priecinku.
+
+Prerequisites:
+- arm-none-eabi-gcc, arm-none-eabi-objcopy, arm-none-eabi-size
+- make
+
+Podporene app ciele:
+- test_button
+- test_RS485
+- test_RS485_modbus
+
+Priklady:
+- make APP=test_button
+- make APP=test_RS485
+- make APP=test_RS485_modbus
+
+Vystupy su v priecinku:
+- build/<APP>/<APP>.elf
+- build/<APP>/<APP>.hex
+- build/<APP>/<APP>.bin
+
+Vymazanie build artefaktov:
+- make clean
