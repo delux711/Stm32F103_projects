@@ -4,7 +4,7 @@
 *                         www.segger.com                             *
 **********************************************************************
 
-File          : C:/Users/P/Documents/Keil_projects/Stm32F103_projects/project/keil_test_RS485/ozone_RS485_test_ROM.jdebug
+File          : C:/Users/P/Documents/Keil_projects/Stm32F103_projects/project/keil_test_RS485/ozone_RS485_test_RAM.jdebug
 Created       : 3 May 2026 17:51
 Ozone Version : V3.36
 */
@@ -35,7 +35,7 @@ void OnProjectLoad (void) {
   //
   Edit.SysVar (VAR_RTT_ENABLED, 1);
 //  File.Open ("$(ProjectDir)/../../KEIL_objects/RS485.axf");
-  File.Open ("$(ProjectDir)/../../build/test_RS485/test_RS485.elf");
+  File.Open ("$(ProjectDir)/../../build/test_RS485_ram/test_RS485.elf");
 }
 
 /*********************************************************************

@@ -22,8 +22,8 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.AddPathSubstitute ("C:/Users/P/Documents/Keil_projects/Stm32F103_projects/project/keil_test_button", "$(ProjectDir)");
-  Project.AddPathSubstitute ("c:/users/p/documents/keil_projects/stm32f103_projects/project/keil_test_button", "$(ProjectDir)");
+  Project.SetTraceSource ("SWO");
+  Project.ConfigSWO ("2 MHz", "8 MHz");
   Project.SetDevice ("STM32F103C8");
   Project.SetHostIF ("USB", "");
   Project.SetTargetIF ("SWD");
@@ -34,7 +34,8 @@ void OnProjectLoad (void) {
   // User settings
   //
   Edit.SysVar (VAR_RTT_ENABLED, 1);
-  File.Open ("$(ProjectDir)/../../KEIL_objects/button.axf");
+  // File.Open ("$(ProjectDir)/../../KEIL_objects/button.axf");
+  File.Open ("$(ProjectDir)/../../build/test_button_flash/test_button.elf");
 }
 
 /*********************************************************************
@@ -326,8 +327,27 @@ void AfterTargetDownload (void) {
 **********************************************************************
 */
 void _SetupTarget(void) {
+  unsigned int SP;
+  unsigned int PC;
+  unsigned int VectorTableAddr;
+
+  // VectorTableAddr = Elf.GetBaseAddr();
+  VectorTableAddr = 0x08000000;
   //
-  // this function is intentionally empty because both inital PC and
-  // initial SP were chosen not to be set
+  // Set up initial stack pointer
   //
+  SP = Target.ReadU32(VectorTableAddr);
+  if (SP != 0xFFFFFFFF) {
+    Target.SetReg("SP", SP);
+  }
+  //
+  // Set up entry point PC
+  //
+  // PC = Elf.GetEntryPointPC();
+  PC = Target.ReadU32(VectorTableAddr + 4);
+  if (PC != 0xFFFFFFFF) {
+    Target.SetReg("PC", PC);
+  } else {
+    Util.Error("Project script error: failed to set up entry point PC", 1);
+  }
 }

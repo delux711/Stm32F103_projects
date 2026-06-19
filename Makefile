@@ -1,12 +1,18 @@
-APP ?= test_RS485
+# Automatická detekcia názvu aplikácie z priečinku
+CURRENT_DIR_NAME := $(notdir $(CURDIR))
+VALID_APPS := test_button test_RS485 test_RS485_modbus
+ifneq ($(filter $(CURRENT_DIR_NAME), $(VALID_APPS)),)
+    APP ?= $(CURRENT_DIR_NAME)
+else
+    APP ?= test_RS485
+endif
 
 .SILENT:
 
 TARGET_APP := $(APP)
 # TARGET_BUILD = RAM or FLASH
-TARGET_BUILD ?= FLASH
-# TARGET_BUILD ?= RAM
-BUILD_DIR := build/$(APP)
+TARGET_BUILD ?= RAM
+# TARGET_BUILD ?= FLASH
 
 CC := arm-none-eabi-gcc
 OBJCOPY := arm-none-eabi-objcopy
@@ -14,10 +20,14 @@ SIZE := arm-none-eabi-size
 
 ifeq ($(TARGET_BUILD), RAM)
 	LDSCRIPT := bsp/STM32F103C8/stm32f103c8_ram.ld
-	# Pri behu z RAM je často potrebné definovať makro pre relokáciu vektora prerušení
-    CFLAGS += -DVECT_TAB_SRAM
+	BUILD_DIR := build/$(APP)_ram
+	DEFS := -DSTM32F10X_MD -DVECT_TAB_SRAM
 else ifeq ($(TARGET_BUILD), FLASH)
 	LDSCRIPT := bsp/STM32F103C8/stm32f103c8_flash.ld
+	BUILD_DIR := build/$(APP)_flash
+	DEFS := -DSTM32F10X_MD
+else
+	$(error Invalid TARGET_BUILD='$(TARGET_BUILD)'. Use RAM or FLASH)
 endif
 
 APP_DIR := apps/$(APP)
@@ -44,9 +54,6 @@ INCLUDES := \
 	-I$(CMSIS_CORE) \
 	-I$(RTT_RTT) \
 	-I$(RTT_CFG)
-
-DEFS := \
-	-DSTM32F10X_MD
 
 CPUFLAGS := -mcpu=cortex-m3 -mthumb -mfloat-abi=soft
 
@@ -76,11 +83,23 @@ ELF := $(BUILD_DIR)/$(TARGET_APP).elf
 HEX := $(BUILD_DIR)/$(TARGET_APP).hex
 BIN := $(BUILD_DIR)/$(TARGET_APP).bin
 
-.PHONY: all clean list-apps
+.PHONY: all clean clean_all clean_r clean_f list-apps r f
 
 all: $(ELF) $(HEX) $(BIN)
 
-list-apps:
+r:
+	$(MAKE) TARGET_BUILD=RAM all
+
+f:
+	$(MAKE) TARGET_BUILD=FLASH all
+
+clean_r:
+	$(MAKE) TARGET_BUILD=RAM clean
+
+clean_f:
+	$(MAKE) TARGET_BUILD=FLASH clean
+
+list:
 	@echo test_button
 	@echo test_RS485
 	@echo test_RS485_modbus
@@ -101,4 +120,7 @@ $(BUILD_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
+	@if exist "$(BUILD_DIR)" rmdir /S /Q "$(BUILD_DIR)"
+
+clean_all:
 	@if exist build rmdir /S /Q build

@@ -30,28 +30,46 @@ stm32f103-project/
 GCC build (arm-none-eabi-gcc)
 =============================
 
-Tento projekt uz vie buildovat bez Keilu cez Makefile v root priecinku.
+Projekt sa da buildovat bez Keilu cez root Makefile.
 
 Prerequisites:
-- arm-none-eabi-gcc, arm-none-eabi-objcopy, arm-none-eabi-size
+- arm-none-eabi-gcc
+- arm-none-eabi-objcopy
+- arm-none-eabi-size
 - make
 
-Podporene app ciele:
+Podporene aplikacie:
 - test_button
 - test_RS485
 - test_RS485_modbus
 
-Priklady:
-- make APP=test_button
-- make APP=test_RS485
-- make APP=test_RS485 TARGET_BUILD=FLASH
-- make APP=test_RS485 TARGET_BUILD=RAM
-- make APP=test_RS485_modbus
+Zakladne spravanie:
+- `make` -> default build pre RAM
+- `make r` -> build RAM
+- `make f` -> build FLASH
+- `TARGET_BUILD` moze byt iba `RAM` alebo `FLASH`
 
-Vystupy su v priecinku:
-- build/<APP>/<APP>.elf
-- build/<APP>/<APP>.hex
-- build/<APP>/<APP>.bin
+Globalne definicie podla variantu:
+- RAM: `STM32F10X_MD`, `VECT_TAB_SRAM`
+- FLASH: `STM32F10X_MD`
 
-Vymazanie build artefaktov:
-- make clean
+Vystupy:
+- RAM: `build/<APP>_ram/<APP>.elf|hex|bin`
+- FLASH: `build/<APP>_flash/<APP>.elf|hex|bin`
+
+Priklady build prikazov z root priecinka:
+- `make APP=test_button`
+- `make APP=test_RS485 r`
+- `make APP=test_RS485 f`
+- `make APP=test_RS485 TARGET_BUILD=RAM`
+- `make APP=test_RS485 TARGET_BUILD=FLASH`
+
+Clean:
+- `make clean` -> maze iba aktivny variant (podla `TARGET_BUILD`, default RAM)
+- `make clean_r` -> maze iba `build/<APP>_ram`
+- `make clean_f` -> maze iba `build/<APP>_flash`
+- `make clean_all` -> maze cely `build`
+
+Build z priecinka aplikacie:
+- z `apps/test_button`: `make`, `make r`, `make f`, `make clean_r`, `make clean_f`
+- wrapper Makefile automaticky zavola root Makefile s korektnym `APP`
