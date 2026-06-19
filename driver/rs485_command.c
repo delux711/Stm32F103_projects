@@ -136,6 +136,12 @@ static void RS485_commandOnRxByte(uint8_t data)
                 RS485_commandLogHex(data);
                 RS485_commandLog("\r\n");
             }
+            else {
+                RS485_commandLog("IRQ: address mismatch: ");
+                RS485_commandLogHex(data);
+                RS485_commandLog("\r\n");
+                RS485_goToMuteMode();
+            }
             break;
         }
         case RS485_COMMAND_IRQ_LENGTH:

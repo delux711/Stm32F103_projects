@@ -138,6 +138,12 @@ static void RS485_sendByte(uint8_t data)
     usart->DR = (uint16_t)data;
 }
 
+void RS485_goToMuteMode(void)
+{
+    RS485_logString("Entering mute mode\r\n");
+    usart->CR1 |= USART_CR1_RWU; // go to mute
+}
+
 void RS485_usartIrqHandler(void)
 {
     if ((usart->SR & USART_SR_RXNE) != 0u)

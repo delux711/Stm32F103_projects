@@ -26,6 +26,7 @@ typedef struct
 void RS485_init(const RS485_config_t *config);
 void RS485_setRxCallback(RS485_rxCallback_t rx_callback);
 void RS485_send(const uint8_t *data, uint16_t length);
+void RS485_goToMuteMode(void);
 void RS485_usartIrqHandler(void);
 
 #endif
