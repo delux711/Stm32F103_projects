@@ -44,6 +44,8 @@ Podporene app ciele:
 Priklady:
 - make APP=test_button
 - make APP=test_RS485
+- make APP=test_RS485 TARGET_BUILD=FLASH
+- make APP=test_RS485 TARGET_BUILD=RAM
 - make APP=test_RS485_modbus
 
 Vystupy su v priecinku:

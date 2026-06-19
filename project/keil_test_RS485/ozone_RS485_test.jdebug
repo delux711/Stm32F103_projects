@@ -24,8 +24,6 @@ void OnProjectLoad (void) {
   //
   Project.SetTraceSource ("SWO");
   Project.ConfigSWO ("2 MHz", "8 MHz");
-  Project.AddPathSubstitute ("C:/Users/P/Documents/Keil_projects/Stm32F103_projects/project/keil_test_RS485", "$(ProjectDir)");
-  Project.AddPathSubstitute ("c:/users/p/documents/keil_projects/stm32f103_projects/project/keil_test_rs485", "$(ProjectDir)");
   Project.SetDevice ("STM32F103C8");
   Project.SetHostIF ("USB", "");
   Project.SetTargetIF ("SWD");
@@ -36,7 +34,8 @@ void OnProjectLoad (void) {
   // User settings
   //
   Edit.SysVar (VAR_RTT_ENABLED, 1);
-  File.Open ("$(ProjectDir)/../../KEIL_objects/RS485.axf");
+//  File.Open ("$(ProjectDir)/../../KEIL_objects/RS485.axf");
+  File.Open ("$(ProjectDir)/../../build/test_RS485/test_RS485.elf");
 }
 
 /*********************************************************************
@@ -332,7 +331,8 @@ void _SetupTarget(void) {
   unsigned int PC;
   unsigned int VectorTableAddr;
 
-  VectorTableAddr = Elf.GetBaseAddr();
+  // VectorTableAddr = Elf.GetBaseAddr();
+  VectorTableAddr = 0x08000000;
   //
   // Set up initial stack pointer
   //
@@ -343,7 +343,8 @@ void _SetupTarget(void) {
   //
   // Set up entry point PC
   //
-  PC = Elf.GetEntryPointPC();
+  // PC = Elf.GetEntryPointPC();
+  PC = Target.ReadU32(VectorTableAddr + 4);
   if (PC != 0xFFFFFFFF) {
     Target.SetReg("PC", PC);
   } else {

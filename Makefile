@@ -4,7 +4,8 @@ APP ?= test_RS485
 
 TARGET_APP := $(APP)
 # TARGET_BUILD = RAM or FLASH
-TARGET_BUILD ?= RAM
+TARGET_BUILD ?= FLASH
+# TARGET_BUILD ?= RAM
 BUILD_DIR := build/$(APP)
 
 CC := arm-none-eabi-gcc
@@ -55,6 +56,7 @@ CFLAGS := $(CPUFLAGS) \
 	-ffunction-sections -fdata-sections \
 	-fno-common \
 	-Wall -Wextra \
+	-g3 \
 	$(DEFS) $(INCLUDES)
 
 LDFLAGS := $(CPUFLAGS) \
@@ -62,8 +64,11 @@ LDFLAGS := $(CPUFLAGS) \
 	-Wl,-Map=$(BUILD_DIR)/$(TARGET_APP).map \
 	-Wl,--gc-sections \
 	-Wl,--print-memory-usage \
+	-Wl,--undefined=Reset_Handler \
+	-Wl,--undefined=main \
 	-specs=nano.specs \
 	-specs=nosys.specs \
+	-nostartfiles
 
 OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 

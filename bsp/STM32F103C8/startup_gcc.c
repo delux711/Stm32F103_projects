@@ -4,7 +4,8 @@ extern int main(void);
 extern void SystemInit(void);
 extern void __libc_init_array(void);
 
-extern uint32_t _estack;
+// Zmena z uint32_t na prázdne pole, čo v C garantuje, že názov premennej je priamo adresa
+extern uint32_t _estack[];
 extern uint32_t _sidata;
 extern uint32_t _sdata;
 extern uint32_t _edata;
@@ -73,7 +74,7 @@ IRQ_WEAK_DEFAULT(USBWakeUp_IRQHandler);
 
 __attribute__((section(".isr_vector")))
 void (*const g_pfnVectors[])(void) = {
-    (void (*)(void))(&_estack),
+    (void (*)(void))((uint32_t)&_estack),
     Reset_Handler,
     NMI_Handler,
     HardFault_Handler,
@@ -141,8 +142,20 @@ void (*const g_pfnVectors[])(void) = {
 
 void Reset_Handler(void)
 {
-    uint32_t *src = &_sidata;
-    uint32_t *dst = &_sdata;
+    // 1. Vynútené hardvérové nahratie správnych adries do registrov pomocou assembleru
+    // Toto kompilátor NEMÔŽE optimalizovať ani vymazať!
+    __asm volatile (
+        "ldr r0, =_sidata \n"  // Nahraj adresu začiatku dát vo FLASH do R0
+        "ldr r1, =_sdata  \n"  // Nahraj adresu začiatku dát v RAM do R1
+        "ldr r2, =_edata  \n"  // Nahraj adresu konca dát v RAM do R2
+        "ldr r3, =_sbss   \n"  // Nahraj začiatok BSS do R3
+        "ldr r4, =_ebss   \n"  // Nahraj koniec BSS do R4
+    );
+
+    // 2. Teraz už bezpečne prekopírujeme .data sekciu (využijeme pripravené registre)
+    register uint32_t *src __asm("r0");
+    register uint32_t *dst __asm("r1");
+    // register uint32_t *end __asm("r2");
 
     while (dst < &_edata)
     {
@@ -169,4 +182,9 @@ void Default_Handler(void)
     while (1)
     {
     }
+}
+
+void _init(void)
+{
+    // Prázdna funkcia, ktorú vyžaduje libc_nano.a pri linkovaní
 }
