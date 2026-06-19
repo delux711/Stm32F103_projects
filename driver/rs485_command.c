@@ -43,14 +43,14 @@ static void RS485_commandLog(const char *msg)
 static void RS485_commandLogHex(uint32_t value)
 {
     char buffer[11u];
-    snprintf(buffer, sizeof(buffer), "0x%08X", value);
+    snprintf(buffer, sizeof(buffer), "0x%08lX", value);
     RS485_commandLog(buffer);
 }
 
 static void RS485_commandLogDec(uint32_t value)
 {
     char buffer[12u];
-    snprintf(buffer, sizeof(buffer), "%u", value);
+    snprintf(buffer, sizeof(buffer), "%lu", value);
     RS485_commandLog(buffer);
 }
 

@@ -1,13 +1,23 @@
 APP ?= test_RS485
 
-TARGET := $(APP)
+.SILENT:
+
+TARGET_APP := $(APP)
+# TARGET_BUILD = RAM or FLASH
+TARGET_BUILD ?= RAM
 BUILD_DIR := build/$(APP)
 
 CC := arm-none-eabi-gcc
 OBJCOPY := arm-none-eabi-objcopy
 SIZE := arm-none-eabi-size
 
-LDSCRIPT := bsp/STM32F103C8/stm32f103c8_flash.ld
+ifeq ($(TARGET_BUILD), RAM)
+	LDSCRIPT := bsp/STM32F103C8/stm32f103c8_ram.ld
+	# Pri behu z RAM je často potrebné definovať makro pre relokáciu vektora prerušení
+    CFLAGS += -DVECT_TAB_SRAM
+else ifeq ($(TARGET_BUILD), FLASH)
+	LDSCRIPT := bsp/STM32F103C8/stm32f103c8_flash.ld
+endif
 
 APP_DIR := apps/$(APP)
 
@@ -49,18 +59,17 @@ CFLAGS := $(CPUFLAGS) \
 
 LDFLAGS := $(CPUFLAGS) \
 	-T$(LDSCRIPT) \
-	-Wl,-Map=$(BUILD_DIR)/$(TARGET).map \
+	-Wl,-Map=$(BUILD_DIR)/$(TARGET_APP).map \
 	-Wl,--gc-sections \
 	-Wl,--print-memory-usage \
 	-specs=nano.specs \
 	-specs=nosys.specs \
-	-nostartfiles
 
 OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 
-ELF := $(BUILD_DIR)/$(TARGET).elf
-HEX := $(BUILD_DIR)/$(TARGET).hex
-BIN := $(BUILD_DIR)/$(TARGET).bin
+ELF := $(BUILD_DIR)/$(TARGET_APP).elf
+HEX := $(BUILD_DIR)/$(TARGET_APP).hex
+BIN := $(BUILD_DIR)/$(TARGET_APP).bin
 
 .PHONY: all clean list-apps
 
