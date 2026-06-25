@@ -1,8 +1,20 @@
+#include "app_config.h"
+#include "debug.h"
 #include "modbus_rtu.h"
 
 #include <string.h>
 #include "rs485.h"
 #include "systick.h"
+
+/*
+ * MODBUS_DBG - debug output macro.
+ * Default: calls DEBUG_writeString().
+ * To disable: add  #define MODBUS_DBG(msg)  to app_config.h.
+ * Linker discards all related string literals when the macro is empty.
+ */
+#ifndef MODBUS_DBG
+#  define MODBUS_DBG(msg)  DEBUG_writeString(msg)
+#endif
 
 #define MODBUS_RTU_MAX_FRAME_SIZE            (256u)
 #define MODBUS_RTU_MIN_REQUEST_SIZE          (8u)
@@ -75,6 +87,7 @@ void MODBUS_RTU_init(const MODBUS_RTU_config_t *config)
     modbus_last_rx_tick = 0u;
 
     RS485_setRxCallback(MODBUS_RTU_onRxByte);
+    MODBUS_DBG("MODBUS init\r\n");
 }
 
 void MODBUS_RTU_process(void)
@@ -107,6 +120,7 @@ void MODBUS_RTU_process(void)
     modbus_frame_active = false;
 
     MODBUS_RTU_handleFrame(frame_copy, frame_len);
+    MODBUS_DBG("MODBUS process frame\r\n");
 }
 
 static void MODBUS_RTU_onRxByte(uint8_t data)
@@ -134,6 +148,7 @@ static void MODBUS_RTU_handleFrame(const uint8_t *frame, uint16_t len)
 
     if ((frame == 0) || (len < MODBUS_RTU_MIN_REQUEST_SIZE))
     {
+        MODBUS_DBG("MODBUS frame too short\r\n");
         return;
     }
 
@@ -150,6 +165,7 @@ static void MODBUS_RTU_handleFrame(const uint8_t *frame, uint16_t len)
     crc_frame = (uint16_t)frame[len - 2u] | ((uint16_t)frame[len - 1u] << 8);
     if (crc_calc != crc_frame)
     {
+        MODBUS_DBG("MODBUS CRC err\r\n");
         return;
     }
 
@@ -301,10 +317,12 @@ static void MODBUS_RTU_handleFrame(const uint8_t *frame, uint16_t len)
     {
         MODBUS_RTU_sendException(slave_address, function, MODBUS_EX_ILLEGAL_FUNCTION);
     }
+    MODBUS_DBG("MODBUS unknown function\r\n");
 }
 
 static void MODBUS_RTU_sendException(uint8_t slave_address, uint8_t function, uint8_t exception)
 {
+    MODBUS_DBG("MODBUS send exception\r\n");
     modbus_tx_buffer[0u] = slave_address;
     modbus_tx_buffer[1u] = (uint8_t)(function | 0x80u);
     modbus_tx_buffer[2u] = exception;

@@ -3,6 +3,16 @@
 #include "button.h"
 #include "debug.h"
 
+/*
+ * BUTTON_DBG - debug output macro.
+ * Default: calls DEBUG_writeString().
+ * To disable: add  #define BUTTON_DBG(msg)  to app_config.h.
+ * Linker discards all related string literals when the macro is empty.
+ */
+#ifndef BUTTON_DBG
+#  define BUTTON_DBG(msg)  DEBUG_writeString(msg)
+#endif
+
 #define DEBOUNCE_MS        20
 #define LONG_PRESS_MS     800
 #define MULTICLICK_MS     400   // max pauza medzi klikmi
@@ -83,6 +93,7 @@ static void BUTTON_buttonMulticlickProcess(volatile btn_t *b)
                 case 2: if (b->on_double) b->on_double(); break;
                 case 3: if (b->on_triple) b->on_triple(); break;
             }
+            BUTTON_DBG("BUTTON click dispatched\r\n");
             b->click_count = 0;
 
             /* návrat do EXTI režimu */
@@ -171,6 +182,7 @@ void BUTTON_init(const volatile btn_t *button_configs, uint32_t count)
         b->port->BSRR = b->pin_mask;   // nastav high
     }
     BUTTON_initExti();
+    BUTTON_DBG("BUTTON init\r\n");
 }
 
 void BUTTON_irqGlobalHandler(void) {
@@ -182,6 +194,7 @@ void BUTTON_irqGlobalHandler(void) {
             EXTI->PR = mask;                 // clear pending
             EXTI->IMR &= ~mask;              // vypnúť EXTI
             buttons[i].active = 1;           // prejsť do polling
+            BUTTON_DBG("BUTTON edge\r\n");
         }
     }
 }

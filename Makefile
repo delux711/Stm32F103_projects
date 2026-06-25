@@ -1,6 +1,6 @@
 # Automatická detekcia názvu aplikácie z priečinku
 CURRENT_DIR_NAME := $(notdir $(CURDIR))
-VALID_APPS := test_button test_RS485 test_RS485_modbus
+VALID_APPS := test_button test_RS485 test_RS485_modbus test_onewire test_ir_tx test_ir_rx test_ds18b20 test_rf433
 ifneq ($(filter $(CURRENT_DIR_NAME), $(VALID_APPS)),)
     APP ?= $(CURRENT_DIR_NAME)
 else
@@ -103,6 +103,10 @@ list:
 	@echo test_button
 	@echo test_RS485
 	@echo test_RS485_modbus
+	@echo test_onewire
+	@echo test_ir_tx
+	@echo test_ir_rx
+	@echo test_ds18b20
 
 $(ELF): $(OBJS)
 	@if not exist "$(dir $@)" mkdir "$(dir $@)"
