@@ -37,8 +37,7 @@
 #define IR_PIN           6u         /* PA6 = TIM3_CH1 (no AFIO remap)     */
 #define IR_TIMER         TIM3
 #define IR_CHANNEL       1u
-#define IR_CPU_FREQ_HZ   72000000u
-#define IR_BETWEEN_MS    3000u      /* pause between commands (ms)         */
+#define IR_BETWEEN_MS    2000u      /* pause between commands (ms)         */
 
 static const IR_TX_config_t ir_config = {
     .port            = IR_PORT,
@@ -49,7 +48,6 @@ static const IR_TX_config_t ir_config = {
     .timer_rcc_bit   = RCC_APB1ENR_TIM3EN,
     .afio_remap_mask = 0u,
     .afio_remap_val  = 0u,
-    .cpu_freq_hz     = IR_CPU_FREQ_HZ
 };
 
 /* ---------------------------------------------------------------- helpers -- */

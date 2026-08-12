@@ -53,7 +53,7 @@ static void IR_TX_dwtInit(void)
 
 static void IR_TX_delayUs(uint32_t us)
 {
-    uint32_t cycles = (ir_cfg.cpu_freq_hz / 1000000u) * us;
+    uint32_t cycles = (SystemCoreClock / 1000000u) * us;
     uint32_t start  = DWT->CYCCNT;
     while ((DWT->CYCCNT - start) < cycles)
     {
@@ -153,7 +153,7 @@ void IR_TX_init(const IR_TX_config_t *config)
     TIM_TypeDef *tim = config->timer;
 
     /* --- 38 kHz carrier: PSC=0, ARR = f_timer/38000 - 1 --- */
-    ir_arr    = (config->cpu_freq_hz / 38000u) - 1u;
+    ir_arr    = (SystemCoreClock / 38000u) - 1u;
     ir_ccr_on = ir_arr / 3u;   /* ~33 % duty cycle */
 
     tim->CR1 = 0u;             /* disable while configuring */

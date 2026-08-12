@@ -63,11 +63,8 @@ typedef struct {
     uint32_t           timer_rcc_bit;    // napr. RCC_APB1ENR_TIM3EN
     uint32_t           afio_remap_mask;  // 0 = žiadny remap
     uint32_t           afio_remap_val;   // 0 = žiadny remap
-    uint32_t           cpu_freq_hz;      // frekvencia CPU = frekvencia timera
 } IR_TX_config_t;
 ```
-
-> **Poznámka ku clock tree:** TIM2/TIM3/TIM4 sú na APB1. Pri systémovej frekvencii 72 MHz a delení APB1/2 = 36 MHz platí, že timer clock = 2 × APB1 = **72 MHz**. `cpu_freq_hz` teda zadaj vždy ako `SystemCoreClock` (72 000 000).
 
 ## API
 
@@ -151,8 +148,7 @@ static const IR_TX_config_t ir_cfg = {
     .timer_rcc_reg   = (volatile uint32_t *)&RCC->APB1ENR,
     .timer_rcc_bit   = RCC_APB1ENR_TIM3EN,
     .afio_remap_mask = 0u,
-    .afio_remap_val  = 0u,
-    .cpu_freq_hz     = 72000000u
+    .afio_remap_val  = 0u
 };
 
 IR_TX_init(&ir_cfg);
