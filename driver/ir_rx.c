@@ -87,7 +87,7 @@ static void IR_RX_timerInit(const IR_RX_config_t *config)
     }
 
     tim->PSC = psc - 1u;
-    tim->ARR = 0xFFFFFFFFu;
+    tim->ARR = 0xFFFFu;
     tim->CNT = 0u;
     tim->EGR = TIM_EGR_UG;
     tim->CR1 = TIM_CR1_CEN;

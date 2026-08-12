@@ -101,28 +101,28 @@ static void IR_TX_timerChannelInit(TIM_TypeDef *tim, uint8_t channel)
             tim->CCMR1 = (tim->CCMR1 & ~(TIM_CCMR1_OC1M | TIM_CCMR1_CC1S))
                        | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
             tim->CCER  = (tim->CCER  & ~TIM_CCER_CC1P) | TIM_CCER_CC1E;
-            ir_ccr_reg = &tim->CCR1;
+            ir_ccr_reg = (volatile uint32_t *)&tim->CCR1;
             break;
 
         case 2u:
             tim->CCMR1 = (tim->CCMR1 & ~(TIM_CCMR1_OC2M | TIM_CCMR1_CC2S))
                        | TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1;
             tim->CCER  = (tim->CCER  & ~TIM_CCER_CC2P) | TIM_CCER_CC2E;
-            ir_ccr_reg = &tim->CCR2;
+            ir_ccr_reg = (volatile uint32_t *)&tim->CCR2;
             break;
 
         case 3u:
             tim->CCMR2 = (tim->CCMR2 & ~(TIM_CCMR2_OC3M | TIM_CCMR2_CC3S))
                        | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1;
             tim->CCER  = (tim->CCER  & ~TIM_CCER_CC3P) | TIM_CCER_CC3E;
-            ir_ccr_reg = &tim->CCR3;
+            ir_ccr_reg = (volatile uint32_t *)&tim->CCR3;
             break;
 
         default: /* channel 4 */
             tim->CCMR2 = (tim->CCMR2 & ~(TIM_CCMR2_OC4M | TIM_CCMR2_CC4S))
                        | TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1;
             tim->CCER  = (tim->CCER  & ~TIM_CCER_CC4P) | TIM_CCER_CC4E;
-            ir_ccr_reg = &tim->CCR4;
+            ir_ccr_reg = (volatile uint32_t *)&tim->CCR4;
             break;
     }
 }
