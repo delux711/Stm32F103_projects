@@ -6,8 +6,10 @@
 #  define EEPROM_DBG(msg) DEBUG_writeString(msg)
 #endif
 
+#ifndef FLASH_KEY1
 #define FLASH_KEY1 (0x45670123u)
 #define FLASH_KEY2 (0xCDEF89ABu)
+#endif
 
 static void EEPROM_unlock(void)
 {
