@@ -51,8 +51,7 @@ static const IR_RX_config_t ir_cfg = {
     .exti_line      = 1u,
     .timer          = TIM2,
     .timer_rcc_reg  = (volatile uint32_t *)&RCC->APB1ENR,
-    .timer_rcc_bit  = RCC_APB1ENR_TIM2EN,
-    .timer_clock_hz = 72000000u
+    .timer_rcc_bit  = RCC_APB1ENR_TIM2EN
 };
 ```
 

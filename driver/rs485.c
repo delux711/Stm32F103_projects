@@ -3,6 +3,7 @@
 #include "stm32f10x.h"
 #include "debug.h"
 #include "gpio.h"
+#include <stddef.h> // for NULL
 
 // #define RS485_PARITY_ENABLE 1
 // #define RS485_LOG_IRQ_COUNTER
@@ -67,25 +68,33 @@ static void RS485_gpioInit(const RS485_config_t *config)
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
     GPIO_enableClock(config->txPort);
     GPIO_enableClock(config->rxPort);
-    GPIO_enableClock(config->dirPort);
+    if(config->dirPort != NULL)
+        GPIO_enableClock(config->dirPort);
 
     AFIO->MAPR = (AFIO->MAPR & ~config->usartRemapMask) | config->usartRemap;
 
     GPIO_configPin(config->txPort, config->txPin, GPIO_CFG_OUTPUT_AF_PP_2MHZ);
     GPIO_configPin(config->rxPort, config->rxPin, GPIO_CFG_INPUT_FLOATING);
-    GPIO_configPin(config->dirPort, config->dirPin, GPIO_CFG_OUTPUT_PP_2MHZ);
+    if(config->dirPort != NULL)
+        GPIO_configPin(config->dirPort, config->dirPin, GPIO_CFG_OUTPUT_PP_2MHZ);
 
     RS485_txDisable();
 }
 
 static void RS485_txEnable(void)
 {
-    rs485_config.dirPort->BSRR = (uint32_t)1u << rs485_config.dirPin;
+    if(rs485_config.dirPort != NULL)
+    {
+        rs485_config.dirPort->BSRR = (uint32_t)1u << rs485_config.dirPin;
+    }
 }
 
 static void RS485_txDisable(void)
 {
-    rs485_config.dirPort->BRR = (uint32_t)1u << rs485_config.dirPin;
+    if(rs485_config.dirPort != NULL)
+    {
+        rs485_config.dirPort->BRR = (uint32_t)1u << rs485_config.dirPin;
+    }
 }
 
 static uint32_t RS485_getUsartClockHz(void)

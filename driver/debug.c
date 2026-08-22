@@ -88,6 +88,7 @@ void DEBUG_initTrace(uint32_t cpu_freq_hz)
         TPIU->SPPR = 2;          // NRZ/Async mode
         TPIU->FFCR = 0x100;      // disable formatter
     }
+    SEGGER_RTT_Init();
 }
 
 void DEBUG_writeString(const char *s) {

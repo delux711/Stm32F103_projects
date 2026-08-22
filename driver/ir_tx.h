@@ -27,6 +27,8 @@ typedef struct
 {
     GPIO_TypeDef      *port;             /* GPIO port of IR LED pin          */
     uint8_t            pin;              /* GPIO pin number 0-15             */
+    GPIO_TypeDef      *etrPort;          /* GPIO port of TIMx_ETR pin        */
+    uint8_t            etrPin;           /* GPIO pin number 0-15             */
     TIM_TypeDef       *timer;            /* Timer instance, e.g. TIM3        */
     uint8_t            channel;          /* Timer channel 1-4                */
     volatile uint32_t *timer_rcc_reg;    /* &RCC->APB1ENR or &RCC->APB2ENR  */
@@ -104,6 +106,8 @@ void IR_TX_sendNEC(uint8_t address, uint8_t command);
  */
 void IR_TX_sendNECRepeat(void);
 
+void IR_TX_PWMOn(void);
+void IR_TX_PWMOff(void);
 #ifdef __cplusplus
 }
 #endif
