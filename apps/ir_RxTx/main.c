@@ -165,6 +165,12 @@ static void APP_sendStep(const IR_TX_step_t *step)
     DEBUG_ledPinOff();
 }
 
+void sendIr(const uint8_t *data, uint16_t length) {
+    ir_tx_config.timer->CCER |= TIM_CCER_CC1E << ((IR_TX_CHANNEL - 1u) * 4); // enable output for channel 2
+    RS485_send(data, length);
+    ir_tx_config.timer->CCER &= ~(TIM_CCER_CC1E << ((IR_TX_CHANNEL - 1u) * 4)); // disable output for channel 2
+}
+
 int main(void)
 {
     IR_RX_frame_t frame;
@@ -210,20 +216,22 @@ int main(void)
         static uint32_t last_send = 0u;
         static uint32_t last_rs485 = 0u;
 
-        if ((SYS_getMs() - last_send) >= 1000u)
-        {
-            // APP_sendStep(&app_sequence[step]);
-            step = (step + 1u) % APP_SEQUENCE_COUNT;
-            last_send = SYS_getMs();
-        }
+        // if ((SYS_getMs() - last_send) >= 1000u)
+        // {
+        //     // APP_sendStep(&app_sequence[step]);
+        //     step = (step + 1u) % APP_SEQUENCE_COUNT;
+        //     last_send = SYS_getMs();
+        // }
 
         if ((SYS_getMs() - last_rs485) >= 1000u)
         {
-            IR_TX_PWMOn();
+            // IR_TX_PWMOn();
+            DEBUG_ledPinOn();
             DEBUG_writeString("RS485 test: sending 'Hello RS485' via USART1\r\n");
-            const char *msg = "A";
-            RS485_send((const uint8_t *)msg, (uint16_t)strlen(msg));
+            const char *msg = "5A";
+            sendIr((const uint8_t *)msg, (uint16_t)strlen(msg));
             last_rs485 = SYS_getMs();
+            DEBUG_ledPinOff();
         }
     }
 }

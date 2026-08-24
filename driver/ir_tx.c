@@ -175,6 +175,7 @@ void IR_TX_init(const IR_TX_config_t *config)
     tim->SMCR |= TIM_SMCR_ETP; /* ETR active low */
     tim->SMCR |=(tim->SMCR & ~TIM_SMCR_TS) | (TIM_SMCR_TS); /* 111: External Trigger input (ETRF) */
 
+    IR_TX_PWMOn();
     /* Timer je v takom mode, kedy generuje frekvenciu na vystupnom CH kanaly iba vtedy, ak je na pine ETR logická 0. Ak je log1, negeneruje signal.
     Je to dobre ak chcem  vysielať signal cez IR diodu */
     tim->CR1 = TIM_CR1_CEN;
