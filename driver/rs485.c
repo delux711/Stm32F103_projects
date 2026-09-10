@@ -134,6 +134,11 @@ static void RS485_usartInit(void)
         USART_CR1_RE |
         USART_CR1_TE |
         USART_CR1_RXNEIE;
+    usart->CR1 &= ~(USART_CR1_PCE | USART_CR1_PS); // Disable parity and set even parity by default
+    usart->CR1 |= rs485_config.parity; // Set the desired parity configuration
+    usart->CR1 &= ~USART_CR1_M; // Clear the M bit (8-bit data)
+    usart->CR1 |= rs485_config.dataBits; // Set the desired data bits configuration
+
     /* BRR pre oversampling x16: BRR ~= fCK / baud, so zaokruhlenim */
     usart->BRR = (usart_clk + (rs485_config.baudrate / 2u)) / rs485_config.baudrate;
     usart->CR1 |= USART_CR1_UE;
@@ -166,10 +171,12 @@ void RS485_usartIrqHandler(void)
             rs485_rx_callback(data);
         }
     }
-
     if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE | USART_SR_IDLE)) != 0u)
     {
         RS485_logString("USART error\r\n");
+        RS485_logString("SR=0x");
+        DEBUG_writeHex32(usart->SR);
+        DEBUG_writeString("\r\n");
         (void)usart->SR;
         (void)usart->DR;
     }

@@ -70,7 +70,9 @@ static const RS485_config_t rs485_cfg = {
     .usartIrqn      = USART1_IRQn,
     .usartRccReg    = &RCC->APB2ENR,
     .usartRccBit    = RCC_APB2ENR_USART1EN,
-    .baudrate       = 4800u
+    .baudrate       = 9600u,
+    .dataBits      = USART_DATA_BITS_8,
+    .parity        = USART_PARITY_EVEN
 };
 
 
@@ -167,8 +169,18 @@ static void APP_sendStep(const IR_TX_step_t *step)
 
 void sendIr(const uint8_t *data, uint16_t length) {
     ir_tx_config.timer->CCER |= TIM_CCER_CC1E << ((IR_TX_CHANNEL - 1u) * 4); // enable output for channel 2
+    DEBUG_writeString("TX: ");
+    DEBUG_writeString((const char *)data);
+    // APP_printHex8(*data);
+    DEBUG_writeString("\r\n");
     RS485_send(data, length);
     ir_tx_config.timer->CCER &= ~(TIM_CCER_CC1E << ((IR_TX_CHANNEL - 1u) * 4)); // disable output for channel 2
+}
+
+void rxCallback(uint8_t data) {
+    DEBUG_writeString("RS485 received: ");
+    APP_printHex8(data);
+    DEBUG_writeString("\r\n");
 }
 
 int main(void)
@@ -183,6 +195,7 @@ int main(void)
     IR_RX_init(&ir_rx_config);
     IR_TX_init(&ir_tx_config);
     RS485_init(&rs485_cfg);
+    RS485_setRxCallback(rxCallback);
 
     DEBUG_writeString("IR RX TX test start - NEC, TSOP4838 on PA6\r\n");
     DEBUG_writeString("PA1 -> 33R -> IR LED -> GND\r\n");
@@ -223,12 +236,13 @@ int main(void)
         //     last_send = SYS_getMs();
         // }
 
-        if ((SYS_getMs() - last_rs485) >= 1000u)
+        if ((SYS_getMs() - last_rs485) >= 2000u)
         {
             // IR_TX_PWMOn();
             DEBUG_ledPinOn();
-            DEBUG_writeString("RS485 test: sending 'Hello RS485' via USART1\r\n");
-            const char *msg = "5A";
+            // DEBUG_writeString("RS485 test: sending 'Hello RS485' via USART1\r\n");
+            // const char *msg = "/?!\r\n";
+            const char *msg = "?\r\n";
             sendIr((const uint8_t *)msg, (uint16_t)strlen(msg));
             last_rs485 = SYS_getMs();
             DEBUG_ledPinOff();

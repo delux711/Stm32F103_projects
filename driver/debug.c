@@ -99,6 +99,31 @@ void DEBUG_writeChar(char c) {
     (void)SEGGER_RTT_Write(0u, &c, 1u);
 }
 
+void DEBUG_writeHex32(uint32_t val) {
+    static const char hex[] = "0123456789ABCDEF";
+    char buf[11] = "0x00000000";
+    uint8_t i;
+
+    for (i = 0u; i < 8u; i++)
+    {
+        buf[9u - i] = hex[(uint8_t)(val & 0x0Fu)];
+        val >>= 4u;
+    }
+
+    DEBUG_writeString(buf);
+}
+
+void DEBUG_writeHex8(uint8_t val) {
+    static const char hex[] = "0123456789ABCDEF";
+    char buf[5] = "0x00";
+
+    buf[2] = hex[(val >> 4u) & 0x0Fu];
+    buf[3] = hex[val & 0x0Fu];
+
+    DEBUG_writeString(buf);
+}
+
+
 // int DEBUG_printf(const char *fmt, ...) {
 //     int r;
 //     va_list args;

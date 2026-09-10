@@ -7,6 +7,9 @@ void DEBUG_initTrace(uint32_t cpu_freq_hz);
 
 void DEBUG_writeString(const char *s);
 void DEBUG_writeChar(char c);
+void DEBUG_writeHex32(uint32_t val);
+void DEBUG_writeHex8(uint8_t val);
+
 // int  DEBUG_printf(const char *fmt, ...);
 
 static inline void DEBUG_sendCharInternal(uint8_t ch, uint8_t channel)
