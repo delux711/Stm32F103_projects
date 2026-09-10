@@ -58,21 +58,23 @@ static const IR_TX_config_t ir_tx_config = {
     .afio_remap_val  = 0u
 };
 static const RS485_config_t rs485_cfg = {
-    .txPort        = GPIOB,
-    .txPin         = 6u,
-    .rxPort        = GPIOB,
-    .rxPin         = 7u,
+    .uart          = {
+        .txPort        = GPIOB,
+        .txPin         = 6u,
+        .rxPort        = GPIOB,
+        .rxPin         = 7u,
+        .usartRemapMask = AFIO_MAPR_USART1_REMAP,
+        .usartRemap     = AFIO_MAPR_USART1_REMAP,
+        .usart          = USART1,
+        .usartIrqn      = USART1_IRQn,
+        .usartRccReg    = &RCC->APB2ENR,
+        .usartRccBit    = RCC_APB2ENR_USART1EN,
+        .baudrate       = 9600u,
+        .dataBits       = UART_DATA_BITS_8,
+        .parity         = UART_PARITY_EVEN
+    },
     .dirPort       = NULL,
-    .dirPin        = 0u,
-    .usartRemapMask = AFIO_MAPR_USART1_REMAP,
-    .usartRemap     = AFIO_MAPR_USART1_REMAP,
-    .usart          = USART1,
-    .usartIrqn      = USART1_IRQn,
-    .usartRccReg    = &RCC->APB2ENR,
-    .usartRccBit    = RCC_APB2ENR_USART1EN,
-    .baudrate       = 9600u,
-    .dataBits      = USART_DATA_BITS_8,
-    .parity        = USART_PARITY_EVEN
+    .dirPin        = 0u
 };
 
 

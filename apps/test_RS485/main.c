@@ -13,19 +13,21 @@ static const char *APP_commandLenka(void);
 static const char *APP_commandParkside(void);
 
 static const RS485_config_t rs485_config = {
-    .txPort = GPIOB,
-    .txPin = 6u,
-    .rxPort = GPIOB,
-    .rxPin = 7u,
+    .uart = {
+        .txPort = GPIOB,
+        .txPin = 6u,
+        .rxPort = GPIOB,
+        .rxPin = 7u,
+        .usartRemapMask = AFIO_MAPR_USART1_REMAP,
+        .usartRemap = AFIO_MAPR_USART1_REMAP,
+        .usart = USART1,
+        .usartIrqn = USART1_IRQn,
+        .usartRccReg = &RCC->APB2ENR,
+        .usartRccBit = RCC_APB2ENR_USART1EN,
+        .baudrate = 9600u
+    },
     .dirPort = GPIOB,
-    .dirPin = 8u,
-    .usartRemapMask = AFIO_MAPR_USART1_REMAP,
-    .usartRemap = AFIO_MAPR_USART1_REMAP,
-    .usart = USART1,
-    .usartIrqn = USART1_IRQn,
-    .usartRccReg = &RCC->APB2ENR,
-    .usartRccBit = RCC_APB2ENR_USART1EN,
-    .baudrate = 9600u};
+    .dirPin = 8u};
 
 static const RS485_command_t app_command_table[] = {
     {"PING", APP_commandPing},
