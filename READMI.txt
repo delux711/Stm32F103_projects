@@ -42,6 +42,11 @@ Podporene aplikacie:
 - test_button
 - test_RS485
 - test_RS485_modbus
+- test_onewire
+- test_ir_tx
+- test_ir_rx
+- test_ds18b20
+- test_rf433
 
 Zakladne spravanie:
 - `make` -> default build pre RAM

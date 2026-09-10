@@ -1,0 +1,2 @@
+#define DRIVER_SYSTICK_USE
+#define DRIVER_ONEWIRE_USE

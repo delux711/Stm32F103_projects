@@ -16,6 +16,6 @@ void SYS_incrementMs(void)
 void SYS_delayMs(uint32_t ms) {
     uint32_t start = SYS_time_ms;
     while ((SYS_time_ms - start) < ms) {
-        __WFI(); // šetrí CPU
+// papu        __WFI(); // šetrí CPU
     }
 }

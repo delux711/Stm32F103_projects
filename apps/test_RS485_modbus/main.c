@@ -5,6 +5,7 @@
 #include "rs485.h"
 #include "modbus_rtu.h"
 #include "debug.h"
+#include "debug_rtt_levels.h"
 
 static bool APP_readHolding(void *context, uint16_t address, uint16_t *value);
 static bool APP_writeHolding(void *context, uint16_t address, uint16_t value);
@@ -56,7 +57,7 @@ int main(void)
     RS485_init(&rs485_config);
     MODBUS_RTU_init(&modbus_config);
     DEBUG_sendString("Modbus RTU slave test\r\n", 0);
-    DEBUG_writeString("FC03/FC06/FC10 ready\r\n");
+    rtt_ok("FC03/FC06/FC10 ready\r\n");
 
     while (1)
     {

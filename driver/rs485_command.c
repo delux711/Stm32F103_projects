@@ -1,6 +1,5 @@
 #include "rs485_command.h"
 
-#include <stdio.h>
 #include <string.h>
 #include "systick.h"
 #include "debug.h"
@@ -43,14 +42,55 @@ static void RS485_commandLog(const char *msg)
 static void RS485_commandLogHex(uint32_t value)
 {
     char buffer[11u];
-    snprintf(buffer, sizeof(buffer), "0x%08lX", value);
+    uint32_t i;
+
+    buffer[0] = '0';
+    buffer[1] = 'x';
+    for (i = 0u; i < 8u; i++)
+    {
+        uint8_t nibble = (uint8_t)((value >> ((7u - i) * 4u)) & 0x0Fu);
+        uint8_t digit;
+        if (nibble < 10u)
+        {
+            digit = (uint8_t)('0' + nibble);
+        }
+        else
+        {
+            digit = (uint8_t)('A' + (nibble - 10u));
+        }
+        buffer[2u + i] = (char)digit;
+    }
+    buffer[10u] = '\0';
     RS485_commandLog(buffer);
 }
 
 static void RS485_commandLogDec(uint32_t value)
 {
     char buffer[12u];
-    snprintf(buffer, sizeof(buffer), "%lu", value);
+    char tmp[10u];
+    uint32_t i = 0u;
+    uint32_t j;
+
+    if (value == 0u)
+    {
+        buffer[0] = '0';
+        buffer[1] = '\0';
+        RS485_commandLog(buffer);
+        return;
+    }
+
+    while ((value > 0u) && (i < (uint32_t)sizeof(tmp)))
+    {
+        tmp[i++] = (char)('0' + (value % 10u));
+        value /= 10u;
+    }
+
+    for (j = 0u; j < i; j++)
+    {
+        buffer[j] = tmp[i - 1u - j];
+    }
+    buffer[i] = '\0';
+
     RS485_commandLog(buffer);
 }
 
