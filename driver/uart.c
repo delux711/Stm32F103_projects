@@ -5,6 +5,7 @@
 
 static UART_config_t uart_config;
 static UART_rxCallback_t uart_rx_callback = 0;
+static UART_txCallback_t uart_tx_callback = 0;
 
 static uint32_t UART_getClockHz(void);
 static void UART_gpioInit(void);
@@ -19,7 +20,8 @@ void UART_init(const UART_config_t *config)
     }
 
     uart_config = *config;
-    uart_rx_callback = 0;
+    uart_rx_callback = config->rxCallback;
+    uart_tx_callback = config->txCallback;
     UART_gpioInit();
     UART_usartInit();
 }
@@ -27,6 +29,11 @@ void UART_init(const UART_config_t *config)
 void UART_setRxCallback(UART_rxCallback_t rx_callback)
 {
     uart_rx_callback = rx_callback;
+}
+
+void UART_setTxCallback(UART_txCallback_t tx_callback)
+{
+    uart_tx_callback = tx_callback;
 }
 
 void UART_send(const uint8_t *data, uint16_t length)
@@ -42,6 +49,11 @@ void UART_send(const uint8_t *data, uint16_t length)
     }
 
     while ((uart_config.usart->SR & USART_SR_TC) == 0u) { }
+
+    if (uart_tx_callback != 0)
+    {
+        uart_tx_callback();
+    }
 }
 
 void UART_goToMuteMode(void)

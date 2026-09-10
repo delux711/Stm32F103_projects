@@ -9,6 +9,9 @@
 #ifdef DRIVER_RS485_USE
   #include "rs485.h"
 #endif
+#ifdef DRIVER_UART_USE
+  #include "uart.h"
+#endif
 #ifdef DRIVER_IR_RX_USE
   #include "ir_rx.h"
 #endif
@@ -86,13 +89,19 @@ void SysTick_Handler(void)
 
 void USART1_IRQHandler(void)
 {
+  #ifdef DRIVER_UART_USE
+    UART_irqHandler();
+  #endif
   #ifdef DRIVER_RS485_USE
-    RS485_usartIrqHandler();
+    // RS485_usartIrqHandler();
   #endif
 }
 
 void USART2_IRQHandler(void)
 {
+  #ifdef DRIVER_UART_USE
+    UART_irqHandler();
+  #endif
   #ifdef DRIVER_RF433_USE
     RF433_usartIrqHandler();
   #endif

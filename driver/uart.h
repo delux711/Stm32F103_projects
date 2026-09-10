@@ -5,6 +5,7 @@
 #include "stm32f10x.h"
 
 typedef void (*UART_rxCallback_t)(uint8_t data);
+typedef void (*UART_txCallback_t)(void);
 
 enum UART_parity_t
 {
@@ -34,10 +35,13 @@ typedef struct
     uint32_t baudrate;
     enum UART_dataBits_t dataBits;
     enum UART_parity_t parity;
+    UART_rxCallback_t rxCallback;
+    UART_txCallback_t txCallback;
 } UART_config_t;
 
 void UART_init(const UART_config_t *config);
 void UART_setRxCallback(UART_rxCallback_t rx_callback);
+void UART_setTxCallback(UART_txCallback_t tx_callback);
 void UART_send(const uint8_t *data, uint16_t length);
 void UART_goToMuteMode(void);
 void UART_irqHandler(void);
