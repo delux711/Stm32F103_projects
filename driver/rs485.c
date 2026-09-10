@@ -3,6 +3,7 @@
 #include "stm32f10x.h"
 #include "debug.h"
 #include "gpio.h"
+#include <stddef.h> // for NULL
 
 // #define RS485_PARITY_ENABLE 1
 // #define RS485_LOG_IRQ_COUNTER
@@ -67,25 +68,33 @@ static void RS485_gpioInit(const RS485_config_t *config)
     RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
     GPIO_enableClock(config->txPort);
     GPIO_enableClock(config->rxPort);
-    GPIO_enableClock(config->dirPort);
+    if(config->dirPort != NULL)
+        GPIO_enableClock(config->dirPort);
 
     AFIO->MAPR = (AFIO->MAPR & ~config->usartRemapMask) | config->usartRemap;
 
     GPIO_configPin(config->txPort, config->txPin, GPIO_CFG_OUTPUT_AF_PP_2MHZ);
     GPIO_configPin(config->rxPort, config->rxPin, GPIO_CFG_INPUT_FLOATING);
-    GPIO_configPin(config->dirPort, config->dirPin, GPIO_CFG_OUTPUT_PP_2MHZ);
+    if(config->dirPort != NULL)
+        GPIO_configPin(config->dirPort, config->dirPin, GPIO_CFG_OUTPUT_PP_2MHZ);
 
     RS485_txDisable();
 }
 
 static void RS485_txEnable(void)
 {
-    rs485_config.dirPort->BSRR = (uint32_t)1u << rs485_config.dirPin;
+    if(rs485_config.dirPort != NULL)
+    {
+        rs485_config.dirPort->BSRR = (uint32_t)1u << rs485_config.dirPin;
+    }
 }
 
 static void RS485_txDisable(void)
 {
-    rs485_config.dirPort->BRR = (uint32_t)1u << rs485_config.dirPin;
+    if(rs485_config.dirPort != NULL)
+    {
+        rs485_config.dirPort->BRR = (uint32_t)1u << rs485_config.dirPin;
+    }
 }
 
 static uint32_t RS485_getUsartClockHz(void)
@@ -125,6 +134,11 @@ static void RS485_usartInit(void)
         USART_CR1_RE |
         USART_CR1_TE |
         USART_CR1_RXNEIE;
+    usart->CR1 &= ~(USART_CR1_PCE | USART_CR1_PS); // Disable parity and set even parity by default
+    usart->CR1 |= rs485_config.parity; // Set the desired parity configuration
+    usart->CR1 &= ~USART_CR1_M; // Clear the M bit (8-bit data)
+    usart->CR1 |= rs485_config.dataBits; // Set the desired data bits configuration
+
     /* BRR pre oversampling x16: BRR ~= fCK / baud, so zaokruhlenim */
     usart->BRR = (usart_clk + (rs485_config.baudrate / 2u)) / rs485_config.baudrate;
     usart->CR1 |= USART_CR1_UE;
@@ -157,10 +171,12 @@ void RS485_usartIrqHandler(void)
             rs485_rx_callback(data);
         }
     }
-
     if ((usart->SR & (USART_SR_ORE | USART_SR_NE | USART_SR_FE | USART_SR_PE | USART_SR_IDLE)) != 0u)
     {
         RS485_logString("USART error\r\n");
+        RS485_logString("SR=0x");
+        DEBUG_writeHex32(usart->SR);
+        DEBUG_writeString("\r\n");
         (void)usart->SR;
         (void)usart->DR;
     }

@@ -1,0 +1,4 @@
+#define DRIVER_SYSTICK_USE
+#define DRIVER_IR_RX_USE
+#define DRIVER_IR_TX_USE
+#define DRIVER_RS485_USE

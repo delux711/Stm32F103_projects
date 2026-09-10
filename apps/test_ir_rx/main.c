@@ -23,7 +23,6 @@
 #define IR_RX_PIN            1u
 #define IR_RX_EXTI_LINE      1u
 #define IR_RX_TIMER          TIM2
-#define IR_RX_TIMER_CLK_HZ   72000000u
 
 static const IR_RX_config_t ir_config = {
     .port           = IR_RX_PORT,
@@ -31,8 +30,7 @@ static const IR_RX_config_t ir_config = {
     .exti_line      = IR_RX_EXTI_LINE,
     .timer          = IR_RX_TIMER,
     .timer_rcc_reg  = (volatile uint32_t *)&RCC->APB1ENR,
-    .timer_rcc_bit  = RCC_APB1ENR_TIM2EN,
-    .timer_clock_hz = IR_RX_TIMER_CLK_HZ
+    .timer_rcc_bit  = RCC_APB1ENR_TIM2EN
 };
 
 static void APP_printHex8(uint8_t val)

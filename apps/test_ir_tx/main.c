@@ -33,17 +33,17 @@
 
 /* ---------------------------------------------------------------- config -- */
 
-#define IR_PORT          GPIOA
-#define IR_PIN           6u         /* PA6 = TIM3_CH1 (no AFIO remap)     */
-#define IR_TIMER         TIM3
-#define IR_CHANNEL       1u
+#define IR_TX_PORT          GPIOA
+#define IR_TX_PIN           6u         /* PA6 = TIM3_CH1 (no AFIO remap)     */
+#define IR_TX_TIMER         TIM3
+#define IR_TX_CHANNEL       1u
 #define IR_BETWEEN_MS    2000u      /* pause between commands (ms)         */
 
-static const IR_TX_config_t ir_config = {
-    .port            = IR_PORT,
-    .pin             = IR_PIN,
-    .timer           = IR_TIMER,
-    .channel         = IR_CHANNEL,
+static const IR_TX_config_t ir_tx_config = {
+    .port            = IR_TX_PORT,
+    .pin             = IR_TX_PIN,
+    .timer           = IR_TX_TIMER,
+    .channel         = IR_TX_CHANNEL,
     .timer_rcc_reg   = (volatile uint32_t *)&RCC->APB1ENR,
     .timer_rcc_bit   = RCC_APB1ENR_TIM3EN,
     .afio_remap_mask = 0u,
@@ -110,7 +110,7 @@ int main(void)
     SysTick_Config(SystemCoreClock / 1000u);
 
     DEBUG_initTrace(SystemCoreClock);
-    IR_TX_init(&ir_config);
+    IR_TX_init(&ir_tx_config);
 
     DEBUG_writeString("IR TX test start – NEC protocol\r\n");
     DEBUG_writeString("PA6 -> 33R -> IR LED -> GND\r\n");

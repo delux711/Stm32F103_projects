@@ -2,7 +2,7 @@
 #define GPIO_H
 
 #include <stdint.h>
-
+#include <stdbool.h>
 #include "stm32f10x.h"
 
 /*
@@ -30,5 +30,14 @@ typedef enum
 
 void GPIO_enableClock(GPIO_TypeDef *port);
 void GPIO_configPin(GPIO_TypeDef *port, uint8_t pin, gpio_config_t config);
+inline void GPIO_writePin(GPIO_TypeDef *port, uint8_t pin, bool value) {
+    if (value)
+        port->BSRR = (uint32_t)1u << pin;
+    else
+        port->BRR = (uint32_t)1u << pin;
+}
+inline void GPIO_getPin(GPIO_TypeDef *port, uint8_t pin, bool *value) {
+    *value = ((port->IDR & ((uint32_t)1u << pin)) != 0u);
+}
 
 #endif

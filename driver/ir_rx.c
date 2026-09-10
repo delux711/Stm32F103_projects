@@ -80,7 +80,7 @@ static void IR_RX_timerInit(const IR_RX_config_t *config)
     tim = config->timer;
     tim->CR1 = 0u;
 
-    psc = (config->timer_clock_hz / 1000000u);
+    psc = (SystemCoreClock / 1000000u);
     if (psc == 0u)
     {
         psc = 1u;

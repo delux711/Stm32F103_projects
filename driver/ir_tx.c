@@ -137,7 +137,10 @@ void IR_TX_init(const IR_TX_config_t *config)
 
     /* --- GPIO --- */
     GPIO_enableClock(config->port);
-    GPIO_configPin(config->port, config->pin, GPIO_CFG_OUTPUT_AF_PP_50MHZ);
+    GPIO_configPin(config->port, config->pin, GPIO_CFG_OUTPUT_AF_PP_2MHZ);
+    GPIO_writePin(config->etrPort, config->etrPin, 1u); // pull-up for TIMx_ETR input
+    GPIO_configPin(config->etrPort, config->etrPin, GPIO_CFG_INPUT_PULL);
+
 
     /* --- AFIO remap (optional) --- */
     if (config->afio_remap_mask != 0u)
@@ -167,6 +170,14 @@ void IR_TX_init(const IR_TX_config_t *config)
 
     /* Force register update, then enable */
     tim->EGR = TIM_EGR_UG;
+
+    tim->SMCR = (tim->SMCR & ~TIM_SMCR_SMS) | (TIM_SMCR_SMS_0 | TIM_SMCR_SMS_2); /* Slave 101: Gated mode, ETR as trigger */
+    tim->SMCR |= TIM_SMCR_ETP; /* ETR active low */
+    tim->SMCR |=(tim->SMCR & ~TIM_SMCR_TS) | (TIM_SMCR_TS); /* 111: External Trigger input (ETRF) */
+
+    IR_TX_PWMOn();
+    /* Timer je v takom mode, kedy generuje frekvenciu na vystupnom CH kanaly iba vtedy, ak je na pine ETR logická 0. Ak je log1, negeneruje signal.
+    Je to dobre ak chcem  vysielať signal cez IR diodu */
     tim->CR1 = TIM_CR1_CEN;
     IR_TX_DBG("IR TX init\r\n");
 }
@@ -217,4 +228,14 @@ void IR_TX_sendNECRepeat(void)
     IR_TX_space(NEC_RPT_SPACE_US);
     IR_TX_mark(NEC_BIT_MARK_US);
     IR_TX_carrierOff();
+}
+
+void IR_TX_PWMOn(void)
+{
+    ir_cfg.timer->CCR1 = ir_cfg.timer->ARR / 2u; // 50% duty cycle
+    *ir_ccr_reg = ir_ccr_on;
+}
+void IR_TX_PWMOff(void)
+{
+    *ir_ccr_reg = 0u;
 }

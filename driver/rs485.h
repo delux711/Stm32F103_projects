@@ -5,7 +5,17 @@
 #include "stm32f10x.h"
 
 typedef void (*RS485_rxCallback_t)(uint8_t data);
-
+enum RS485_parity_t
+{
+    USART_PARITY_NONE = 0u,
+    USART_PARITY_EVEN = USART_CR1_PCE,
+    USART_PARITY_ODD  = (USART_CR1_PCE | USART_CR1_PS)
+};
+enum RS485_dataBits_t
+{
+    USART_DATA_BITS_8 = 0u,
+    USART_DATA_BITS_9 = USART_CR1_M
+};
 typedef struct
 {
     GPIO_TypeDef *txPort;
@@ -21,6 +31,8 @@ typedef struct
     volatile uint32_t *usartRccReg;
     uint32_t usartRccBit;
     uint32_t baudrate;
+    enum RS485_dataBits_t dataBits;
+    enum RS485_parity_t parity;
 } RS485_config_t;
 
 void RS485_init(const RS485_config_t *config);

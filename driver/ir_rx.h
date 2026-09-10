@@ -24,7 +24,6 @@ typedef struct
     TIM_TypeDef       *timer;            /* free-running timer, e.g. TIM2     */
     volatile uint32_t *timer_rcc_reg;    /* &RCC->APB1ENR or &RCC->APB2ENR    */
     uint32_t           timer_rcc_bit;    /* e.g. RCC_APB1ENR_TIM2EN           */
-    uint32_t           timer_clock_hz;   /* timer input clock (usually 72 MHz)*/
 } IR_RX_config_t;
 
 typedef struct
