@@ -70,8 +70,8 @@ static const RS485_config_t rs485_cfg = {
         .usartRccReg    = &RCC->APB2ENR,
         .usartRccBit    = RCC_APB2ENR_USART1EN,
         .baudrate       = 9600u,
-        .dataBits       = UART_DATA_BITS_8,
-        .parity         = UART_PARITY_EVEN
+        .dataBits       = UART_HW_DATA_BITS_8,
+        .parity         = UART_HW_PARITY_EVEN
     },
     .dirPort       = NULL,
     .dirPin        = 0u

@@ -1,6 +1,6 @@
 #include "rs485.h"
 
-#include "uart.h"
+#include "uart_hw.h"
 #include "debug.h"
 #include "gpio.h"
 #include <stddef.h> // for NULL
@@ -25,13 +25,13 @@ void RS485_init(const RS485_config_t *config)
     rs485_config = *config;
 
     RS485_gpioInit(&rs485_config);
-    UART_init(&config->uart);
+    UART_HW_init(&config->uart);
     RS485_logString("RS485 init done\r\n");
 }
 
 void RS485_setRxCallback(RS485_rxCallback_t rx_callback)
 {
-    UART_setRxCallback(rx_callback);
+    UART_HW_setRxCallback(rx_callback);
 }
 
 void RS485_send(const uint8_t *data, uint16_t length)
@@ -42,7 +42,7 @@ void RS485_send(const uint8_t *data, uint16_t length)
     }
 
     RS485_txEnable();
-    UART_send(data, length);
+    UART_HW_send(data, length);
     RS485_txDisable();
 }
 
@@ -76,10 +76,10 @@ static void RS485_txDisable(void)
 void RS485_goToMuteMode(void)
 {
     RS485_logString("Entering mute mode\r\n");
-    UART_goToMuteMode();
+    UART_HW_goToMuteMode();
 }
 
 void RS485_usartIrqHandler(void)
 {
-    UART_irqHandler();
+    UART_HW_irqHandler();
 }

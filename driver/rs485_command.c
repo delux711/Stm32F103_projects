@@ -49,16 +49,7 @@ static void RS485_commandLogHex(uint32_t value)
     for (i = 0u; i < 8u; i++)
     {
         uint8_t nibble = (uint8_t)((value >> ((7u - i) * 4u)) & 0x0Fu);
-        uint8_t digit;
-        if (nibble < 10u)
-        {
-            digit = (uint8_t)('0' + nibble);
-        }
-        else
-        {
-            digit = (uint8_t)('A' + (nibble - 10u));
-        }
-        buffer[2u + i] = (char)digit;
+        buffer[2u + i] = (char)((nibble < 10u) ? ('0' + nibble) : ('A' + (nibble - 10u)));
     }
     buffer[10u] = '\0';
     RS485_commandLog(buffer);
