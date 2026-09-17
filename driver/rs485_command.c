@@ -41,6 +41,7 @@ static void RS485_commandLog(const char *msg)
 
 static void RS485_commandLogHex(uint32_t value)
 {
+    static const char hex_digits[] = "0123456789ABCDEF";
     char buffer[11u];
     uint32_t i;
 
@@ -49,7 +50,7 @@ static void RS485_commandLogHex(uint32_t value)
     for (i = 0u; i < 8u; i++)
     {
         uint8_t nibble = (uint8_t)((value >> ((7u - i) * 4u)) & 0x0Fu);
-        buffer[2u + i] = (char)((nibble < 10u) ? ('0' + nibble) : ('A' + (nibble - 10u)));
+        buffer[2u + i] = hex_digits[nibble];
     }
     buffer[10u] = '\0';
     RS485_commandLog(buffer);

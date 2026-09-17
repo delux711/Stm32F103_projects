@@ -77,6 +77,7 @@ void UART_SW_init(const UART_SW_config_t *config);
 void UART_SW_setRxCallback(UART_SW_rxCallback_t rx_callback);
 void UART_SW_setTxCallback(UART_SW_txCallback_t tx_callback);
 void UART_SW_send(const uint32_t *data, uint16_t length);
+void UART_SW_goToMuteMode(void);
 void UART_SW_irqHandler(void);
 
 #endif

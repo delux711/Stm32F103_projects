@@ -81,7 +81,8 @@ CFLAGS := $(CPUFLAGS) \
 	-fno-common \
 	-Wall -Wextra \
 	-g3 \
-	$(DEFS) $(INCLUDES)
+	$(DEFS) $(INCLUDES) \
+	-include $(APP_DIR)/app_config.h
 
 LDFLAGS := $(CPUFLAGS) \
 	-T$(LDSCRIPT) \

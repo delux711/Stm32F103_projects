@@ -5,6 +5,7 @@
 #include "ir_tx.h"
 #include "ir_rx.h"
 #include "rs485.h"
+#include "uart.h"
 #include "debug.h"
 #include <stddef.h>
 #include <string.h>
@@ -63,6 +64,16 @@ static const RS485_config_t rs485_cfg = {
         .txPin         = 6u,
         .rxPort        = GPIOB,
         .rxPin         = 7u,
+    #if defined(DRIVER_RS485_UART_SW_USE)
+        .timer          = TIM4,
+        .timerIrqn      = TIM4_IRQn,
+        .timerRccReg    = &RCC->APB1ENR,
+        .timerRccBit    = RCC_APB1ENR_TIM4EN,
+        .baudrate       = 9600u,
+        .dataBits       = UART_DATA_BITS_8,
+        .parity         = UART_PARITY_EVEN,
+        .stopBits       = UART_STOP_BITS_1
+    #else
         .usartRemapMask = AFIO_MAPR_USART1_REMAP,
         .usartRemap     = AFIO_MAPR_USART1_REMAP,
         .usart          = USART1,
@@ -70,8 +81,9 @@ static const RS485_config_t rs485_cfg = {
         .usartRccReg    = &RCC->APB2ENR,
         .usartRccBit    = RCC_APB2ENR_USART1EN,
         .baudrate       = 9600u,
-        .dataBits       = UART_HW_DATA_BITS_8,
-        .parity         = UART_HW_PARITY_EVEN
+        .dataBits       = UART_DATA_BITS_8,
+        .parity         = UART_PARITY_EVEN
+#endif
     },
     .dirPort       = NULL,
     .dirPin        = 0u
@@ -111,22 +123,22 @@ typedef struct
     const char *label;
 } IR_TX_step_t;
 
-static const IR_TX_step_t app_sequence[] = {
-    /* LED strip commands (address 0x00) */
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_POWER,      "LED POWER"    },
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_BRIGHT_UP,  "LED BRIGHT+"  },
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_BRIGHT_UP,  "LED BRIGHT+"  },
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_WHITE,       "LED WHITE"    },
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_RED,         "LED RED"      },
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_GREEN,       "LED GREEN"    },
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_BLUE,        "LED BLUE"     },
-    { IR_ADDR_LED_STRIP, IR_CMD_LED_SMOOTH,      "LED SMOOTH"   },
-    /* LG TV commands – bonus (address 0x04) */
-    { IR_ADDR_LG_TV,     IR_CMD_LG_POWER,        "LG TV POWER"  },
-    { IR_ADDR_LG_TV,     IR_CMD_LG_VOL_UP,       "LG TV VOL+"   },
-};
+// static const IR_TX_step_t app_sequence[] = {
+//     /* LED strip commands (address 0x00) */
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_POWER,      "LED POWER"    },
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_BRIGHT_UP,  "LED BRIGHT+"  },
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_BRIGHT_UP,  "LED BRIGHT+"  },
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_WHITE,       "LED WHITE"    },
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_RED,         "LED RED"      },
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_GREEN,       "LED GREEN"    },
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_BLUE,        "LED BLUE"     },
+//     { IR_ADDR_LED_STRIP, IR_CMD_LED_SMOOTH,      "LED SMOOTH"   },
+//     /* LG TV commands – bonus (address 0x04) */
+//     { IR_ADDR_LG_TV,     IR_CMD_LG_POWER,        "LG TV POWER"  },
+//     { IR_ADDR_LG_TV,     IR_CMD_LG_VOL_UP,       "LG TV VOL+"   },
+// };
 
-#define APP_SEQUENCE_COUNT ((uint32_t)(sizeof(app_sequence) / sizeof(app_sequence[0])))
+// #define APP_SEQUENCE_COUNT ((uint32_t)(sizeof(app_sequence) / sizeof(app_sequence[0])))
 
 static void APP_printHex8(uint8_t val)
 {
@@ -154,20 +166,20 @@ static void APP_printHex32(uint32_t val)
     DEBUG_writeString(buf);
 }
 
-static void APP_sendStep(const IR_TX_step_t *step)
-{
-    DEBUG_writeString("TX: ");
-    DEBUG_writeString(step->label);
-    DEBUG_writeString("  addr=");
-    APP_printHex8(step->address);
-    DEBUG_writeString(" cmd=");
-    APP_printHex8(step->command);
-    DEBUG_writeString("\r\n");
+// static void APP_sendStep(const IR_TX_step_t *step)
+// {
+//     DEBUG_writeString("TX: ");
+//     DEBUG_writeString(step->label);
+//     DEBUG_writeString("  addr=");
+//     APP_printHex8(step->address);
+//     DEBUG_writeString(" cmd=");
+//     APP_printHex8(step->command);
+//     DEBUG_writeString("\r\n");
 
-    DEBUG_ledPinOn();
-    IR_TX_sendNEC(step->address, step->command);
-    DEBUG_ledPinOff();
-}
+//     DEBUG_ledPinOn();
+//     IR_TX_sendNEC(step->address, step->command);
+//     DEBUG_ledPinOff();
+// }
 
 void sendIr(const uint8_t *data, uint16_t length) {
     ir_tx_config.timer->CCER |= TIM_CCER_CC1E << ((IR_TX_CHANNEL - 1u) * 4); // enable output for channel 2
@@ -202,7 +214,7 @@ int main(void)
     DEBUG_writeString("IR RX TX test start - NEC, TSOP4838 on PA6\r\n");
     DEBUG_writeString("PA1 -> 33R -> IR LED -> GND\r\n");
 
-    uint32_t step = 0u;
+    // uint32_t step = 0u;
 
     while (1)
     {
@@ -228,7 +240,7 @@ int main(void)
 
         SYS_delayMs(5u);
 
-        static uint32_t last_send = 0u;
+        // static uint32_t last_send = 0u;
         static uint32_t last_rs485 = 0u;
 
         // if ((SYS_getMs() - last_send) >= 1000u)
@@ -243,8 +255,8 @@ int main(void)
             // IR_TX_PWMOn();
             DEBUG_ledPinOn();
             // DEBUG_writeString("RS485 test: sending 'Hello RS485' via USART1\r\n");
-            // const char *msg = "/?!\r\n";
-            const char *msg = "?\r\n";
+            const char *msg = "/?!\r\n";
+            // const char *msg = "?\r\n";
             sendIr((const uint8_t *)msg, (uint16_t)strlen(msg));
             last_rs485 = SYS_getMs();
             DEBUG_ledPinOff();

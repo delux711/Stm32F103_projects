@@ -22,4 +22,10 @@ Also define `DRIVER_UART_SW_USE` when using the driver from `bsp_irq.c`.
 - `UART_SW_setTxCallback` runs after the complete buffer has been transmitted.
 - `UART_SW_irqHandler` must be called from the selected timer IRQ handler.
 
+RS485 can select this driver through `uart.h` by defining
+`DRIVER_RS485_UART_SW_USE`. In that mode RS485 sends its byte buffer one byte
+at a time through the software UART and keeps its existing `uint8_t` callback
+interface. `UART_SW_goToMuteMode()` only resets the software receiver state;
+the hardware USART address-mark mute mode has no direct software equivalent.
+
 The receive callback receives a `uint32_t` value. Only the configured least-significant data bits are transmitted or returned. For example, a 7-bit even-parity link uses `UART_SW_DATA_BITS_7`, `UART_SW_PARITY_EVEN` and `UART_SW_STOP_BITS_1`.

@@ -1,6 +1,6 @@
+#include "app_config.h"
 #include "rs485.h"
 
-#include "uart_hw.h"
 #include "debug.h"
 #include "gpio.h"
 #include <stddef.h> // for NULL
@@ -15,6 +15,17 @@ static void RS485_logString(const char *msg);
 
 static RS485_config_t rs485_config;
 
+#if defined(DRIVER_RS485_UART_SW_USE)
+static RS485_rxCallback_t rs485_rx_callback;
+static void RS485_uartRxCallback(uint32_t data)
+{
+    if (rs485_rx_callback != 0)
+    {
+        rs485_rx_callback((uint8_t)data);
+    }
+}
+#endif
+
 static void RS485_logString(const char *msg)
 {
     DEBUG_writeString(msg);
@@ -25,13 +36,18 @@ void RS485_init(const RS485_config_t *config)
     rs485_config = *config;
 
     RS485_gpioInit(&rs485_config);
-    UART_HW_init(&config->uart);
+    UART_init(&config->uart);
     RS485_logString("RS485 init done\r\n");
 }
 
 void RS485_setRxCallback(RS485_rxCallback_t rx_callback)
 {
-    UART_HW_setRxCallback(rx_callback);
+#if defined(DRIVER_RS485_UART_SW_USE)
+    rs485_rx_callback = rx_callback;
+    UART_setRxCallback(RS485_uartRxCallback);
+#else
+    UART_setRxCallback(rx_callback);
+#endif
 }
 
 void RS485_send(const uint8_t *data, uint16_t length)
@@ -42,7 +58,7 @@ void RS485_send(const uint8_t *data, uint16_t length)
     }
 
     RS485_txEnable();
-    UART_HW_send(data, length);
+    UART_sendBytes(data, length);
     RS485_txDisable();
 }
 
@@ -76,10 +92,10 @@ static void RS485_txDisable(void)
 void RS485_goToMuteMode(void)
 {
     RS485_logString("Entering mute mode\r\n");
-    UART_HW_goToMuteMode();
+    UART_goToMuteMode();
 }
 
 void RS485_usartIrqHandler(void)
 {
-    UART_HW_irqHandler();
+    UART_irqHandler();
 }

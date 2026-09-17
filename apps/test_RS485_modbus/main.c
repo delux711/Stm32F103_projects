@@ -16,6 +16,16 @@ static const RS485_config_t rs485_config = {
         .txPin = 6u,
         .rxPort = GPIOB,
         .rxPin = 7u,
+#if defined(DRIVER_RS485_UART_SW_USE)
+        .timer = TIM4,
+        .timerIrqn = TIM4_IRQn,
+        .timerRccReg = &RCC->APB1ENR,
+        .timerRccBit = RCC_APB1ENR_TIM4EN,
+        .baudrate = 9600u,
+        .dataBits = UART_DATA_BITS_8,
+        .parity = UART_PARITY_NONE,
+        .stopBits = UART_STOP_BITS_1
+#else
         .usartRemapMask = AFIO_MAPR_USART1_REMAP,
         .usartRemap = AFIO_MAPR_USART1_REMAP,
         .usart = USART1,
@@ -23,6 +33,7 @@ static const RS485_config_t rs485_config = {
         .usartRccReg = &RCC->APB2ENR,
         .usartRccBit = RCC_APB2ENR_USART1EN,
         .baudrate = 9600u
+#endif
     },
     .dirPort = GPIOB,
     .dirPin = 8u};

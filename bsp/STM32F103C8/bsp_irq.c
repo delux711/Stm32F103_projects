@@ -10,6 +10,9 @@
   #include "rs485.h"
 #endif
 #if defined(DRIVER_UART_USE) || defined(DRIVER_RS485_USE)
+  #include "uart.h"
+#endif
+#if defined(DRIVER_UART_USE) && !defined(DRIVER_RS485_UART_SW_USE)
   #include "uart_hw.h"
 #endif
 #ifdef DRIVER_UART_SW_USE
@@ -92,7 +95,7 @@ void SysTick_Handler(void)
 
 void USART1_IRQHandler(void)
 {
-  #if defined(DRIVER_UART_USE) || defined(DRIVER_RS485_USE)
+  #if defined(DRIVER_UART_USE) || (defined(DRIVER_RS485_USE) && !defined(DRIVER_RS485_UART_SW_USE))
     UART_HW_irqHandler();
   #endif
   #ifdef DRIVER_RS485_USE

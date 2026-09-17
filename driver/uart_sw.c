@@ -55,6 +55,12 @@ void UART_SW_init(const UART_SW_config_t *config)
 void UART_SW_setRxCallback(UART_SW_rxCallback_t rx_callback) { uart_sw_rx_callback = rx_callback; }
 void UART_SW_setTxCallback(UART_SW_txCallback_t tx_callback) { uart_sw_tx_callback = tx_callback; }
 
+void UART_SW_goToMuteMode(void)
+{
+    /* Software UART has no hardware address-mark wake-up mode. */
+    uart_sw_rx_state = UART_SW_RX_IDLE;
+}
+
 void UART_SW_send(const uint32_t *data, uint16_t length)
 {
     if ((data == 0) || (length == 0u)) return;

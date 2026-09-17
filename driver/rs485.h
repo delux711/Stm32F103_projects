@@ -2,13 +2,13 @@
 #define RS485_H
 
 #include <stdint.h>
-#include "uart_hw.h"
+#include "uart.h"
 
 typedef void (*RS485_rxCallback_t)(uint8_t data);
 
 typedef struct
 {
-    UART_HW_config_t uart;
+    UART_config_t uart;
     GPIO_TypeDef *dirPort;
     uint8_t dirPin;
 } RS485_config_t;
