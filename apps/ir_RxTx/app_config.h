@@ -1,0 +1,15 @@
+#ifndef APP_CONFIG_H
+#define APP_CONFIG_H
+
+#define DRIVER_SYSTICK_USE
+#define DRIVER_IR_RX_USE
+#define DRIVER_IR_TX_USE
+#define DRIVER_RS485_USE
+#if !defined(DRIVER_RS485_UART_SW_USE)
+#define DRIVER_RS485_UART_HW_USE
+#else
+#define DRIVER_UART_SW_USE
+#define DRIVER_UART_SW_TIMER4_USE
+#endif
+
+#endif

@@ -13,19 +13,32 @@ static const char *APP_commandLenka(void);
 static const char *APP_commandParkside(void);
 
 static const RS485_config_t rs485_config = {
-    .txPort = GPIOB,
-    .txPin = 6u,
-    .rxPort = GPIOB,
-    .rxPin = 7u,
+    .uart = {
+        .txPort = GPIOB,
+        .txPin = 6u,
+        .rxPort = GPIOB,
+        .rxPin = 7u,
+#if defined(DRIVER_RS485_UART_SW_USE)
+        .timer = TIM4,
+        .timerIrqn = TIM4_IRQn,
+        .timerRccReg = &RCC->APB1ENR,
+        .timerRccBit = RCC_APB1ENR_TIM4EN,
+        .baudrate = 9600u,
+        .dataBits = UART_DATA_BITS_8,
+        .parity = UART_PARITY_NONE,
+        .stopBits = UART_STOP_BITS_1
+#else
+        .usartRemapMask = AFIO_MAPR_USART1_REMAP,
+        .usartRemap = AFIO_MAPR_USART1_REMAP,
+        .usart = USART1,
+        .usartIrqn = USART1_IRQn,
+        .usartRccReg = &RCC->APB2ENR,
+        .usartRccBit = RCC_APB2ENR_USART1EN,
+        .baudrate = 9600u
+#endif
+    },
     .dirPort = GPIOB,
-    .dirPin = 8u,
-    .usartRemapMask = AFIO_MAPR_USART1_REMAP,
-    .usartRemap = AFIO_MAPR_USART1_REMAP,
-    .usart = USART1,
-    .usartIrqn = USART1_IRQn,
-    .usartRccReg = &RCC->APB2ENR,
-    .usartRccBit = RCC_APB2ENR_USART1EN,
-    .baudrate = 9600u};
+    .dirPin = 8u};
 
 static const RS485_command_t app_command_table[] = {
     {"PING", APP_commandPing},

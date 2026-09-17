@@ -1,0 +1,128 @@
+﻿/*********************************************************************
+*                 (c) SEGGER Microcontroller GmbH                    *
+*                      The Embedded Experts                          *
+*                         www.segger.com                             *
+**********************************************************************
+
+File          : C:/Git/Moje/Stm32F103_projects/project/keil_test_adc_light/ozone_adc_light_flash.jdebug
+Created       : 25 Jun 2026
+Ozone Version : V3.36
+*/
+
+/*********************************************************************
+*
+*       OnProjectLoad
+*
+* Function description
+*   Project load routine. Required.
+*
+**********************************************************************
+*/
+void OnProjectLoad (void) {
+  //
+  // Dialog-generated settings
+  //
+  Project.SetTraceSource ("SWO");
+  Project.ConfigSWO ("2 MHz", "8 MHz");
+  Project.SetDevice ("STM32F103C8");
+  Project.SetHostIF ("USB", "");
+  Project.SetTargetIF ("SWD");
+  Project.SetTIFSpeed ("4 MHz");
+  Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M3.svd");
+  Project.AddSvdFile ("$(ProjectDir)/../../cmsis/device/STM32F103C8/STM32F103xx.svd");
+  //
+  // User settings
+  //
+  Edit.SysVar (VAR_RTT_ENABLED, 1);
+  File.Open ("$(ProjectDir)/../../build/test_adc_light_flash/test_adc_light.elf");
+}
+
+/*********************************************************************
+*
+*       OnStartupComplete
+*
+* Function description
+*   Called when program execution has reached/passed
+*   the startup completion point. Optional.
+*
+**********************************************************************
+*/
+//void OnStartupComplete (void) {
+//}
+
+/*********************************************************************
+*
+*      TargetReset
+*
+* Function description
+*   Replaces the default target device reset routine. Optional.
+*
+**********************************************************************
+*/
+//void TargetReset (void) {
+//}
+
+/*********************************************************************
+*
+*       BeforeTargetReset
+*
+* Function description
+*   Executed before the target device is reset.
+*   Optional.
+*
+**********************************************************************
+*/
+//void BeforeTargetReset (void) {
+//}
+
+/*********************************************************************
+*
+*       AfterTargetReset
+*
+* Function description
+*   Executed after the target device has been reset.
+*   Optional.
+*
+**********************************************************************
+*/
+//void AfterTargetReset (void) {
+//}
+
+/*********************************************************************
+*
+*       TargetDownload
+*
+* Function description
+*   Replaces the default target device download routine. Optional.
+*
+**********************************************************************
+*/
+//void TargetDownload (void) {
+//}
+
+/*********************************************************************
+*
+*       BeforeTargetDownload
+*
+* Function description
+*   Executed before the target device is downloaded.
+*   Optional.
+*
+**********************************************************************
+*/
+//void BeforeTargetDownload (void) {
+//}
+
+/*********************************************************************
+*
+*       AfterTargetDownload
+*
+* Function description
+*   Executed after the target device has been downloaded.
+*   Optional.
+*
+**********************************************************************
+*/
+//void AfterTargetDownload (void) {
+//}
+

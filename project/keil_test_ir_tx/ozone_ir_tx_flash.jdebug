@@ -1,0 +1,23 @@
+/*********************************************************************
+*                 (c) SEGGER Microcontroller GmbH                    *
+*                      The Embedded Experts                          *
+*                         www.segger.com                             *
+**********************************************************************
+
+File    : ozone_ir_tx_flash.jdebug
+Created : 25 Jun 2026
+*/
+
+void OnProjectLoad (void) {
+  Project.SetTraceSource ("SWO");
+  Project.ConfigSWO ("2 MHz", "8 MHz");
+  Project.SetDevice ("STM32F103C8");
+  Project.SetHostIF ("USB", "");
+  Project.SetTargetIF ("SWD");
+  Project.SetTIFSpeed ("4 MHz");
+  Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M3.svd");
+  Project.AddSvdFile ("$(ProjectDir)/../../cmsis/device/STM32F103C8/STM32F103xx.svd");
+
+  Edit.SysVar (VAR_RTT_ENABLED, 1);
+  File.Open ("$(ProjectDir)/../../build/test_ir_tx_flash/test_ir_tx.elf");
+}

@@ -1,6 +1,6 @@
 # Automatická detekcia názvu aplikácie z priečinku
 CURRENT_DIR_NAME := $(notdir $(CURDIR))
-VALID_APPS := test_button test_RS485 test_RS485_modbus
+VALID_APPS := test_button test_RS485 test_RS485_modbus test_onewire test_ir_tx test_ir_rx test_ds18b20 test_rf433 test_adc_light test_modbus_slave
 ifneq ($(filter $(CURRENT_DIR_NAME), $(VALID_APPS)),)
     APP ?= $(CURRENT_DIR_NAME)
 else
@@ -14,9 +14,26 @@ TARGET_APP := $(APP)
 TARGET_BUILD ?= RAM
 # TARGET_BUILD ?= FLASH
 
-CC := arm-none-eabi-gcc
-OBJCOPY := arm-none-eabi-objcopy
-SIZE := arm-none-eabi-size
+ARM_GCC_PATH ?= M:/GCC/11.3.1/bin
+
+# Prefer the toolchain available in PATH; use the local fallback otherwise.
+ifeq ($(shell where arm-none-eabi-gcc.exe >NUL 2>&1 && echo yes),yes)
+	ARM_GCC_BIN :=
+else
+	ARM_GCC_BIN := $(ARM_GCC_PATH)/
+endif
+
+ifeq ($(origin CC),default)
+	CC := $(ARM_GCC_BIN)arm-none-eabi-gcc.exe
+else ifeq ($(origin CC),undefined)
+	CC := $(ARM_GCC_BIN)arm-none-eabi-gcc.exe
+endif
+OBJCOPY ?= $(ARM_GCC_BIN)arm-none-eabi-objcopy.exe
+SIZE ?= $(ARM_GCC_BIN)arm-none-eabi-size.exe
+JLINK ?= JLink.exe
+JLINK_DEVICE ?= STM32F103C8
+JLINK_IF ?= SWD
+JLINK_SPEED ?= 4000
 
 ifeq ($(TARGET_BUILD), RAM)
 	LDSCRIPT := bsp/STM32F103C8/stm32f103c8_ram.ld
@@ -64,7 +81,8 @@ CFLAGS := $(CPUFLAGS) \
 	-fno-common \
 	-Wall -Wextra \
 	-g3 \
-	$(DEFS) $(INCLUDES)
+	$(DEFS) $(INCLUDES) \
+	-include $(APP_DIR)/app_config.h
 
 LDFLAGS := $(CPUFLAGS) \
 	-T$(LDSCRIPT) \
@@ -82,8 +100,9 @@ OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
 ELF := $(BUILD_DIR)/$(TARGET_APP).elf
 HEX := $(BUILD_DIR)/$(TARGET_APP).hex
 BIN := $(BUILD_DIR)/$(TARGET_APP).bin
+JLINK_SCRIPT := $(BUILD_DIR)/flash.jlink
 
-.PHONY: all clean clean_all clean_r clean_f list-apps r f
+.PHONY: all clean clean_all clean_r clean_f list-apps r f jflash
 
 all: $(ELF) $(HEX) $(BIN)
 
@@ -92,6 +111,17 @@ r:
 
 f:
 	$(MAKE) TARGET_BUILD=FLASH all
+
+jflash: all
+	@if not exist "$(dir $(JLINK_SCRIPT))" mkdir "$(dir $(JLINK_SCRIPT))"
+	@echo ExitOnError 1 > "$(JLINK_SCRIPT)"
+	@echo r >> "$(JLINK_SCRIPT)"
+	@echo h >> "$(JLINK_SCRIPT)"
+	@echo loadfile $(ELF) >> "$(JLINK_SCRIPT)"
+	@echo r >> "$(JLINK_SCRIPT)"
+	@echo g >> "$(JLINK_SCRIPT)"
+	@echo qc >> "$(JLINK_SCRIPT)"
+	"$(JLINK)" -device "$(JLINK_DEVICE)" -if "$(JLINK_IF)" -speed "$(JLINK_SPEED)" -autoconnect 1 -CommanderScript "$(JLINK_SCRIPT)"
 
 clean_r:
 	$(MAKE) TARGET_BUILD=RAM clean
@@ -103,6 +133,10 @@ list:
 	@echo test_button
 	@echo test_RS485
 	@echo test_RS485_modbus
+	@echo test_onewire
+	@echo test_ir_tx
+	@echo test_ir_rx
+	@echo test_ds18b20
 
 $(ELF): $(OBJS)
 	@if not exist "$(dir $@)" mkdir "$(dir $@)"

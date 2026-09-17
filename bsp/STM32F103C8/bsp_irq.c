@@ -9,41 +9,77 @@
 #ifdef DRIVER_RS485_USE
   #include "rs485.h"
 #endif
+#if defined(DRIVER_UART_USE) || defined(DRIVER_RS485_USE)
+  #include "uart.h"
+#endif
+#if defined(DRIVER_UART_USE) && !defined(DRIVER_RS485_UART_SW_USE)
+  #include "uart_hw.h"
+#endif
+#ifdef DRIVER_UART_SW_USE
+  #include "uart_sw.h"
+#endif
+#ifdef DRIVER_IR_RX_USE
+  #include "ir_rx.h"
+#endif
+#ifdef DRIVER_RF433_USE
+  #include "rf433.h"
+#endif
 
 void EXTI0_IRQHandler(void) {
   #ifdef DRIVER_BUTTON_USE
     BUTTON_irqGlobalHandler();
+  #endif
+  #ifdef DRIVER_IR_RX_USE
+    IR_RX_irqGlobalHandler();
   #endif
 }
 void EXTI1_IRQHandler(void) {
   #ifdef DRIVER_BUTTON_USE
     BUTTON_irqGlobalHandler();
   #endif
+  #ifdef DRIVER_IR_RX_USE
+    IR_RX_irqGlobalHandler();
+  #endif
 }
 void EXTI2_IRQHandler(void) {
   #ifdef DRIVER_BUTTON_USE
     BUTTON_irqGlobalHandler();
+  #endif
+  #ifdef DRIVER_IR_RX_USE
+    IR_RX_irqGlobalHandler();
   #endif
 }
 void EXTI3_IRQHandler(void) {
   #ifdef DRIVER_BUTTON_USE
     BUTTON_irqGlobalHandler();
   #endif
+  #ifdef DRIVER_IR_RX_USE
+    IR_RX_irqGlobalHandler();
+  #endif
 }
 void EXTI4_IRQHandler(void) {
   #ifdef DRIVER_BUTTON_USE
     BUTTON_irqGlobalHandler();
+  #endif
+  #ifdef DRIVER_IR_RX_USE
+    IR_RX_irqGlobalHandler();
   #endif
 }
 void EXTI9_5_IRQHandler(void) {
   #ifdef DRIVER_BUTTON_USE
     BUTTON_irqGlobalHandler();
   #endif
+  #ifdef DRIVER_IR_RX_USE
+    IR_RX_irqGlobalHandler();
+  #endif
 }
 void EXTI15_10_IRQHandler(void)
 {
   #ifdef DRIVER_BUTTON_USE
     BUTTON_irqGlobalHandler();
+  #endif
+  #ifdef DRIVER_IR_RX_USE
+    IR_RX_irqGlobalHandler();
   #endif
 }
 
@@ -59,7 +95,41 @@ void SysTick_Handler(void)
 
 void USART1_IRQHandler(void)
 {
+  #if defined(DRIVER_UART_USE) || (defined(DRIVER_RS485_USE) && !defined(DRIVER_RS485_UART_SW_USE))
+    UART_HW_irqHandler();
+  #endif
   #ifdef DRIVER_RS485_USE
-    RS485_usartIrqHandler();
+    // RS485_usartIrqHandler();
   #endif
 }
+
+void USART2_IRQHandler(void)
+{
+  #ifdef DRIVER_UART_USE
+    UART_HW_irqHandler();
+  #endif
+  #ifdef DRIVER_RF433_USE
+    RF433_usartIrqHandler();
+  #endif
+}
+
+#ifdef DRIVER_UART_SW_TIMER2_USE
+void TIM2_IRQHandler(void)
+{
+  UART_SW_irqHandler();
+}
+#endif
+
+#ifdef DRIVER_UART_SW_TIMER3_USE
+void TIM3_IRQHandler(void)
+{
+  UART_SW_irqHandler();
+}
+#endif
+
+#ifdef DRIVER_UART_SW_TIMER4_USE
+void TIM4_IRQHandler(void)
+{
+  UART_SW_irqHandler();
+}
+#endif
