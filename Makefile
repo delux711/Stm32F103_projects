@@ -14,9 +14,22 @@ TARGET_APP := $(APP)
 TARGET_BUILD ?= RAM
 # TARGET_BUILD ?= FLASH
 
-CC := arm-none-eabi-gcc
-OBJCOPY := arm-none-eabi-objcopy
-SIZE := arm-none-eabi-size
+ARM_GCC_PATH ?= M:/GCC/11.3.1/bin
+
+# Prefer the toolchain available in PATH; use the local fallback otherwise.
+ifeq ($(shell where arm-none-eabi-gcc.exe >NUL 2>&1 && echo yes),yes)
+	ARM_GCC_BIN :=
+else
+	ARM_GCC_BIN := $(ARM_GCC_PATH)/
+endif
+
+ifeq ($(origin CC),default)
+	CC := $(ARM_GCC_BIN)arm-none-eabi-gcc.exe
+else ifeq ($(origin CC),undefined)
+	CC := $(ARM_GCC_BIN)arm-none-eabi-gcc.exe
+endif
+OBJCOPY ?= $(ARM_GCC_BIN)arm-none-eabi-objcopy.exe
+SIZE ?= $(ARM_GCC_BIN)arm-none-eabi-size.exe
 JLINK ?= JLink.exe
 JLINK_DEVICE ?= STM32F103C8
 JLINK_IF ?= SWD

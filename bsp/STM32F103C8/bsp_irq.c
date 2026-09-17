@@ -9,8 +9,11 @@
 #ifdef DRIVER_RS485_USE
   #include "rs485.h"
 #endif
-#ifdef DRIVER_UART_USE
-  #include "uart.h"
+#if defined(DRIVER_UART_USE) || defined(DRIVER_RS485_USE)
+  #include "uart_hw.h"
+#endif
+#ifdef DRIVER_UART_SW_USE
+  #include "uart_sw.h"
 #endif
 #ifdef DRIVER_IR_RX_USE
   #include "ir_rx.h"
@@ -89,8 +92,8 @@ void SysTick_Handler(void)
 
 void USART1_IRQHandler(void)
 {
-  #ifdef DRIVER_UART_USE
-    UART_irqHandler();
+  #if defined(DRIVER_UART_USE) || defined(DRIVER_RS485_USE)
+    UART_HW_irqHandler();
   #endif
   #ifdef DRIVER_RS485_USE
     // RS485_usartIrqHandler();
@@ -100,9 +103,30 @@ void USART1_IRQHandler(void)
 void USART2_IRQHandler(void)
 {
   #ifdef DRIVER_UART_USE
-    UART_irqHandler();
+    UART_HW_irqHandler();
   #endif
   #ifdef DRIVER_RF433_USE
     RF433_usartIrqHandler();
   #endif
 }
+
+#ifdef DRIVER_UART_SW_TIMER2_USE
+void TIM2_IRQHandler(void)
+{
+  UART_SW_irqHandler();
+}
+#endif
+
+#ifdef DRIVER_UART_SW_TIMER3_USE
+void TIM3_IRQHandler(void)
+{
+  UART_SW_irqHandler();
+}
+#endif
+
+#ifdef DRIVER_UART_SW_TIMER4_USE
+void TIM4_IRQHandler(void)
+{
+  UART_SW_irqHandler();
+}
+#endif
